@@ -1,28 +1,6 @@
-# Mintlify Starter Kit
+# Engineering Framework Docs
 
-Use the starter kit to get your docs deployed and ready to customize.
-
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
-
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
-
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
-
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
-
-```bash
-npx skills add https://mintlify.com/docs
-```
-
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
-
-See the [AI tools guides](/ai-tools) for tool-specific setup.
+Documentation site for [Engineering Framework](https://www.engineeringframework.dev), built with [Mintlify](https://mintlify.com) and deployed at [docs.engineeringframework.dev](https://docs.engineeringframework.dev).
 
 ## Development
 
