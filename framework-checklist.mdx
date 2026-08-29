@@ -57,7 +57,7 @@ system item (`checklistItemId`) or an org-specific item
 
 ## Browsing the checklist in the dashboard
 
-The **Framework** page (`/dashboard/framework`) renders the full checklist
+The **Framework** page renders the full checklist
 as a searchable accordion, grouped by category then subcategory. Each item
 shows badges for whether it's `Optional`, has a template, and/or has a
 definition. Clicking an item opens a detail panel that fetches its
@@ -84,7 +84,7 @@ browse and read it directly:
   alternative to reading the MCP resource URIs directly), returning a
   message instead of content when none is available.
 
-All of these tools are FGA-controlled (`fgaControlled: true`) and build an
+All of these tools are permission-controlled (`fgaControlled: true`) and build an
 `AuthContext` from the calling user before returning any data — see
 [Permissions](/permissions).
 

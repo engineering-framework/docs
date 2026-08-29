@@ -1,11 +1,11 @@
 ---
 title: "Creating your first Organization (Setup Wizard)"
-description: "Walk through the onboarding flow at /dashboard/setup"
+description: "Walk through the onboarding flow for creating your first organization"
 ---
 
 When a user logs in for the first time and doesn't yet belong to an
 organization, they're taken through a short setup wizard
-(`OrgSetupWizard`) at `/dashboard/setup` to create one.
+(`OrgSetupWizard`) to create one.
 
 ## Step 1: Welcome
 
@@ -14,7 +14,7 @@ organization unlocks:
 
 - Invite teammates and manage their roles
 - Create departments to structure your team
-- Control fine-grained permissions with OpenFGA
+- Control fine-grained permissions for your organization
 
 Click **Get started** to continue.
 
@@ -45,11 +45,11 @@ Submitting calls the `setupOrganization` server action
    the user is authenticated.
 2. Calls `initializeOrganization` from `@repo/core/operations` to create the
    organization and promote the current user to `ORG_ADMIN`.
-3. Best-effort updates the user's Auth0 `app_metadata` with the new
-   `organizationId`, so future JWTs can carry it. This step is **non-fatal**
-   — if Auth0 Management API credentials aren't configured, or the call
-   fails, the error is logged but setup still succeeds, since the database
-   (not Auth0 metadata) is the source of truth.
+3. Best-effort updates the user's identity provider profile with the new
+   `organizationId`, so future sessions can carry it. This step is
+   **non-fatal** — if the identity provider integration isn't configured, or
+   the call fails, the error is logged but setup still succeeds, since the
+   database (not the identity provider) is the source of truth.
 4. Revalidates the `/dashboard` cache so the next page load reflects the new
    organization.
 

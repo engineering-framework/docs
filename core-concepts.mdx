@@ -53,14 +53,14 @@ required `phaseId` pointing at a `ProjectPhase` — see
 
 ## How permissions cascade
 
-Authorization is handled by OpenFGA (relationship-based access control),
+Authorization is enforced through a relationship-based access control model,
 accessed through `checkPermission` / `assertPermission` in
 `@repo/core/permissions`. Every database operation that needs authorization
 calls one of these with a `userId`, a `relation` (e.g. `admin`, `member`,
 `can_view_project`), and a resource (`{ type, id }`).
 
-The hierarchy is what makes cascading permissions work: FGA tuples encode
-**parent relationships** between resource types, and the authorization model
+The hierarchy is what makes cascading permissions work: relationship tuples
+encode **parent relationships** between resource types, and the authorization model
 is defined so that a relation granted on a parent automatically satisfies
 checks on its children.
 
@@ -105,9 +105,9 @@ hierarchy — grants that capability.
 
 Every operation in `@repo/core/operations` follows the same pattern:
 validate input with Zod, check authorization via `assertPermission` (or
-`checkPermission` for conditional logic), perform the Prisma operation, sync
-any new relationships to FGA, and return a typed result or throw an
-`AppError`. Both the frontend (via server actions) and the MCP server (via
+`checkPermission` for conditional logic), perform the database operation,
+sync any new relationships to the authorization store, and return a typed
+result or throw an `AppError`. Both the frontend (via server actions) and the MCP server (via
 tool handlers) build an `AuthContext` and delegate to the same core
 operations, so the same permission model applies regardless of which
 surface a request comes through.

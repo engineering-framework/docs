@@ -4,8 +4,8 @@ description: "Connect OpenAI Codex, GitHub Copilot, or Gemini CLI to the Framewo
 ---
 
 The Framework MCP server and Knowledge Base MCP server both use the
-[StreamableHTTP MCP transport](https://modelcontextprotocol.io/) with Auth0
-JWT authentication. This page is a quick-reference for connecting AI coding
+[StreamableHTTP MCP transport](https://modelcontextprotocol.io/) with JWT
+bearer-token authentication. This page is a quick-reference for connecting AI coding
 tools other than Claude Code. For what each server does and its full tool/
 prompt reference, see [Claude Code Setup](/claude-code-setup) (Framework
 server) and [Knowledge Base MCP Server Setup](/knowledge-base-mcp-setup) (KB
@@ -22,15 +22,15 @@ depth than this page repeats.
 ## A note on authentication
 
 - **Framework MCP server**: implements a full OAuth 2.0 authorization
-  flow (with Dynamic Client Registration) that proxies to Auth0. Any MCP
+  flow (with Dynamic Client Registration). Any MCP
   client that supports OAuth-based remote server auth — including all three
   tools below — can complete a normal browser login the first time it
   connects, the same way Claude Code does.
-- **Knowledge Base MCP server**: only validates an Auth0-issued bearer
+- **Knowledge Base MCP server**: only validates an issued bearer
   token; it does **not** expose OAuth discovery/authorization endpoints.
   Clients that rely on automatic OAuth login (rather than a manually
   supplied bearer token) won't be able to auto-authenticate against it.
-  Ask your administrator for a valid access token for the same Auth0
+  Ask your administrator for a valid access token for the same
   tenant/audience the Knowledge Base MCP server is configured against, and
   supply it as a static bearer token / header using the options below.
 
