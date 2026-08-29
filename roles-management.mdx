@@ -1,0 +1,108 @@
+---
+title: "Roles Management"
+description: "Create role templates and assign them to users at /dashboard/roles"
+---
+
+The **Roles** page (`/dashboard/roles`) is where org admins define and manage
+**role templates** — reusable, named bundles of permissions you can hand out
+to users in your organization. This page only manages the templates
+themselves; assigning a template to a specific person happens from the
+[Users](#assigning-and-revoking-roles) page.
+
+<Note>
+  Only users with the `roles-management` permission (granted by default to
+  the built-in **Org Admin** role) can access this page. Everyone else is
+  redirected to the dashboard.
+</Note>
+
+## System templates vs. custom templates
+
+Every organization starts with three built-in **system templates**, shown
+with a "System" badge:
+
+| Template | What it grants |
+|---|---|
+| **Org Admin** | Full org admin access, MCP server access, the Roles Management feature, and every MCP tool |
+| **User** | Standard member access plus the Engineering Framework checklist, project, and planning tools |
+| **Super Admin** | Full cross-organization access — reserved for platform-level administration, not assignable from the UI |
+
+System templates are read-only — opening one from the table shows its
+permissions but doesn't let you edit or delete it. You can create your own
+**custom templates** alongside these to grant a narrower or different mix of
+permissions (for example, a "Contractor" role that can only access certain
+MCP tools).
+
+## Creating a custom role template
+
+1. Go to **Roles** in the dashboard and click **Create Role**.
+2. Give it a **name** — a URL-safe slug is generated automatically from the
+   name, or you can adjust it yourself.
+3. Optionally add a **description**.
+4. Toggle on the permissions you want the role to grant, organized into four
+   sections:
+   - **Organization** — Admin or Member level org access
+   - **Features** — app-level feature flags (currently: Roles Management)
+   - **MCP Server** — Access (connect and use the MCP server) or Admin
+     (full MCP server admin)
+   - **MCP Tools** — grouped by category (User Management, Role Management,
+     Organizations, Departments, Engineering Framework, Projects, Planning);
+     each toggle grants `execute` access to that specific tool
+5. Click **Create Template**. You need at least a name, a slug, and one
+   permission toggled on.
+
+## Editing a custom role template
+
+Open a custom (non-system) template from the table and click **Edit**.
+Change its name, description, or permission toggles, then **Save Changes**.
+
+<Warning>
+  Editing a template's permissions immediately re-syncs every user currently
+  assigned to it — permissions that were removed from the template are
+  revoked from those users (unless another role they hold also grants the
+  same permission), and newly added permissions are granted. This takes
+  effect right away, with no separate publish step.
+</Warning>
+
+## Deleting a custom role template
+
+Open the template's row menu and choose **Delete**, then confirm. Deleting a
+template revokes its permissions from every user assigned to it — again,
+only the permissions not also granted by one of their other roles are
+actually removed, so a user with multiple overlapping roles won't lose
+access they still have through another role.
+
+System templates cannot be deleted.
+
+## Assigning and revoking roles
+
+Role assignment happens from the **Users** page (`/dashboard/users`), not
+from the Roles page itself:
+
+1. Open a user's edit dialog (or their permissions sheet) from the Users
+   table.
+2. You'll see their currently assigned role templates (any system role
+   except Super Admin, plus any custom templates for your organization, are
+   selectable).
+3. Toggle a role on to assign it — this immediately grants that template's
+   permissions to the user. Toggle it off to revoke — this removes the
+   template's permissions, unless the user retains them through another
+   assigned role.
+4. New users can also be assigned one or more role templates directly from
+   the **Invite User** dialog.
+
+The Users page also shows whether a user's actual permissions still exactly
+match the combination of their assigned templates, or whether they've
+drifted from it (for example, if permissions were changed for them directly
+rather than through a template) — this is surfaced as a "custom" indicator
+in the permissions sheet.
+
+## How this maps to the underlying model
+
+Each permission toggle in the role editor corresponds to a specific,
+concrete access grant — an organization-level role, a feature flag, MCP
+server access, or execute access on one MCP tool. When you assign a role
+template to a user, the framework expands those grants for that user's
+actual organization and applies them; when you revoke or delete a template,
+it computes the net set to remove so a user never loses a permission they
+still hold through a different role. You don't need to think about this
+mechanics to use the page — it's handled automatically on save.

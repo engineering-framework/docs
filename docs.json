@@ -32,8 +32,7 @@
             "pages": [
               "core-concepts",
               "project-phases",
-              "framework-checklist",
-              "permissions"
+              "framework-checklist"
             ]
           },
           {
@@ -43,6 +42,14 @@
               "mcp-server-overview",
               "mcp-server-tools",
               "mcp-server-prompts"
+            ]
+          },
+          {
+            "group": "Permissions & Roles",
+            "pages": [
+              "permissions",
+              "permissions-explained",
+              "roles-management"
             ]
           },
           {

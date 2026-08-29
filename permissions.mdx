@@ -3,8 +3,29 @@ title: "Permissions"
 description: "Authentication and authorization model"
 ---
 
+Engineering Framework uses Auth0 for authentication (who you are) and an
+OpenFGA-based authorization model for permissions (what you can do). The
+two guides below cover the parts of that model that matter day-to-day:
+
+<CardGroup cols={2}>
+  <Card
+    title="Permissions & Roles Explained"
+    icon="shield-check"
+    href="/permissions-explained"
+  >
+    What org admins, members, and Knowledge Base reviewers can each do, in
+    plain language.
+  </Card>
+  <Card
+    title="Roles Management"
+    icon="key"
+    href="/roles-management"
+  >
+    How to create, edit, and assign role templates from the dashboard.
+  </Card>
+</CardGroup>
+
 <Note>
-  Coming soon. This section will document the Auth0 authentication flow and
-  the OpenFGA relationship-based authorization model, including roles and
-  permission checks.
+  A deeper technical writeup of the Auth0 authentication flow and the raw
+  OpenFGA authorization model definition is still coming soon.
 </Note>
