@@ -1,97 +1,48 @@
 ---
 title: "Introduction"
-description: "Welcome to the new home for your documentation"
+description: "Documentation for the Engineering Framework"
 ---
 
-## Setting up
+## What is Engineering Framework?
 
-Get your documentation site up and running in minutes.
+Engineering Framework is a full-stack framework for multi-tenant organization
+management, built with Next.js, Express, Auth0, and OpenFGA. It provides:
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+- A **Next.js web application** for managing organizations, departments, and users
+- A **Framework MCP server** that exposes the same operations as Model Context
+  Protocol tools, so AI agents can manage organizations, users, and permissions
+- A **Knowledge Base** for ingesting and querying project documentation
+- Shared **authentication** (Auth0) and **fine-grained authorization** (OpenFGA)
+  layers used consistently across the web app and MCP server
 
-## Make it yours
+<Note>
+  This documentation site is under active development. Several sections below
+  are placeholders while their content is being written.
+</Note>
 
-Design a docs site that looks great and empowers your users.
+## Explore the docs
 
 <Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+  <Card title="Getting Started" icon="rocket" href="/getting-started">
+    Set up the Engineering Framework locally and understand its architecture.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Framework MCP Server" icon="server" href="/framework-mcp-server">
+    Connect AI agents to the Framework MCP server and use its tools.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Knowledge Base" icon="database" href="/knowledge-base">
+    Ingest project documentation and query it through the Knowledge Base.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Permissions" icon="shield-check" href="/permissions">
+    Understand the Auth0 + OpenFGA authorization model.
   </Card>
 </Columns>
 
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
+## Project source
 
 <Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
+  title="engineeringframework.dev on GitHub"
+  icon="github"
+  href="https://github.com/engineering-framework"
 >
-  Browse our showcase of exceptional documentation sites.
+  Browse the source, file issues, or contribute.
 </Card>
