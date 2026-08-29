@@ -1,0 +1,113 @@
+---
+title: "Core Concepts: Organizations, Departments, Projects"
+description: "The three-level hierarchy and how permissions cascade through it"
+---
+
+Engineering Framework organizes everything around a three-level hierarchy:
+**Organizations** contain **Departments**, and both Organizations and
+Departments can own **Projects**. Permissions are checked against this same
+hierarchy, so access granted higher up cascades down automatically.
+
+## The hierarchy
+
+### Organization
+
+The top-level tenant. Every user, department, and project ultimately belongs
+to one organization (`organizationId` on `User`, `Department`, and
+`Project`). An organization also owns its own configuration:
+
+- Role templates (`RoleTemplate`) — named sets of permission grants, either
+  system-defined (`organizationId: null`) or org-specific
+- Project phases (`ProjectPhase`) — either system defaults or org-specific
+  overrides
+- Org-specific checklist content (`OrgChecklistCategory`,
+  `OrgChecklistSubcategory`, `OrgChecklistItem`, `OrgChecklistTemplate`),
+  typically synced from GitHub — see [GitHub Sync](/github-sync)
+- Phase → checklist-category mappings (`PhaseChecklistCategoryMap`)
+- An optional GitHub Sync configuration (`OrgGithubSyncConfig`)
+
+### Department
+
+A sub-unit of an organization (`Department.organizationId`). Departments
+group users and projects within an org — a `slug` is unique per organization
+(`@@unique([organizationId, slug])`), not globally. A user's
+`departmentId` is optional; a department can be deleted without deleting its
+organization (`onDelete: Cascade` from the org side), and deleting a
+department sets its users' `departmentId` to null rather than deleting the
+users (`onDelete: SetNull`).
+
+### Project
+
+A project belongs to exactly one organization and, optionally, one
+department (`Project.departmentId` is nullable). Every project also has a
+required `phaseId` pointing at a `ProjectPhase` — see
+[Project Phases & Phase Mapping](/project-phases). Projects track:
+
+- `ProjectMember` — who's involved and in what role (`tech_lead`,
+  `product_manager`, `sre`, `engineering_manager`, etc.)
+- `ProjectChecklistItem` — per-project status (`not_started`,
+  `in_progress`, `complete`, `not_applicable`) for each checklist item that
+  applies to that project
+- `ProjectIntegrationConfig` — optional git integration (provider, repo URL,
+  branch, docs path) for where planning artifacts live
+
+## How permissions cascade
+
+Authorization is handled by OpenFGA (relationship-based access control),
+accessed through `checkPermission` / `assertPermission` in
+`@repo/core/permissions`. Every database operation that needs authorization
+calls one of these with a `userId`, a `relation` (e.g. `admin`, `member`,
+`can_view_project`), and a resource (`{ type, id }`).
+
+The hierarchy is what makes cascading permissions work: FGA tuples encode
+**parent relationships** between resource types, and the authorization model
+is defined so that a relation granted on a parent automatically satisfies
+checks on its children.
+
+- **Department → Organization**: when a department is created, the app
+  writes a `parent` tuple from the organization to the department
+  (`organization:<id>` `parent` `department:<id>`). Any user with `admin` on
+  the organization automatically satisfies `admin` checks on its child
+  departments — you don't need to grant department admin separately.
+
+- **Project → Organization**: similarly, when a project is created, a
+  `parent_org` tuple is written from the organization to the project
+  (`organization:<id>` `parent_org` `project:<id>`). This means org admins
+  automatically satisfy the project-level capability checks
+  (`can_view_project`, `can_edit_project`, `can_delete_project`,
+  `can_manage_project_members`) without any per-project grant.
+
+In other words: granting someone `admin` on an organization is enough for
+them to administer every department and project underneath it. Finer-grained
+access (e.g. a single department member, or a single project contributor)
+is granted directly on that specific resource instead of at the
+organization level.
+
+## Roles vs. capabilities
+
+The `RelationType` union used throughout `@repo/core/permissions` mixes two
+kinds of relations:
+
+- **Identity-based roles** — `owner`, `admin`, `member`, `viewer`, `editor`,
+  `contributor`, `reviewer`: "you *are* a viewer of this resource."
+- **Action-based capabilities** — `execute`, `view`,
+  `can_create_project`, `can_view_project`, `can_edit_project`,
+  `can_delete_project`, `can_manage_project_members`,
+  `can_view_planning_status`, `can_update_planning_item`: "you *can*
+  perform this specific action."
+
+Operations typically check a capability (e.g. `can_edit_project`) rather
+than a raw role, and the authorization model resolves whether the caller's
+role — direct or inherited through the organization/department/project
+hierarchy — grants that capability.
+
+## Where this is enforced
+
+Every operation in `@repo/core/operations` follows the same pattern:
+validate input with Zod, check authorization via `assertPermission` (or
+`checkPermission` for conditional logic), perform the Prisma operation, sync
+any new relationships to FGA, and return a typed result or throw an
+`AppError`. Both the frontend (via server actions) and the MCP server (via
+tool handlers) build an `AuthContext` and delegate to the same core
+operations, so the same permission model applies regardless of which
+surface a request comes through.

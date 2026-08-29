@@ -1,0 +1,102 @@
+---
+title: "The Knowledge Base: What It's For"
+description: "Purpose of the Knowledge Base and how content gets in"
+---
+
+The Knowledge Base is a searchable store of your organization's engineering
+knowledge — decisions, guides, pitfalls, and process docs — that both people
+and AI agents can query. Content is written as Markdown, ingested with a bit
+of structured metadata, and made available through a search UI in the
+dashboard and through MCP tools for AI clients.
+
+## What lives in the Knowledge Base
+
+Every piece of content is a **Document**: a title, a Markdown body, a
+`type` (e.g. decision, guide, pitfall, process), and metadata that determines
+how it's organized and discovered:
+
+- **domains** — topical areas a Document belongs to (e.g. `backend`,
+  `auth`). Domain Reviewers are granted review/approval rights per domain.
+- **projectId** — optionally scopes a Document to a single project instead
+  of (or in addition to) a domain.
+- **tags**, **appliesTo**, **anchors**, **sources** — additional metadata
+  used for filtering and traceability back to source material.
+- **edges** (`part_of` / `relates_to`) — links to other Documents, used to
+  build a lightweight knowledge graph and to determine whether a Document is
+  an orphan (see [The Document Review Workflow](/knowledge-base-review)).
+
+Every Document starts in `draft` status and must be approved by a Domain
+Reviewer before it becomes `published` and visible to general search — see
+[The Document Review Workflow](/knowledge-base-review) for that process.
+
+## How content gets in: ingestion
+
+Content enters the Knowledge Base through a single **ingest pipeline**
+(`ingestDocumentFields`), shared by two entry points:
+
+1. **CLI ingest** (`ingestDocument`) — reads a local Markdown file with a
+   YAML front-matter block, splits front matter from body, and validates the
+   front matter (`title` and `type` are required; everything else is
+   optional and defaults sensibly).
+2. **HTTP ingest route** (`POST /api/documents/ingest`) — the same
+   validated-fields pipeline, for programmatic callers that already have
+   parsed fields rather than a file on disk.
+
+A Markdown file for ingestion looks like this:
+
+```markdown
+---
+title: "Why we use OpenFGA for authorization"
+type: decision
+domains:
+  - backend
+  - auth
+tags:
+  - authorization
+edges:
+  relates_to:
+    - doc-id-of-a-related-document
+---
+
+The actual Markdown content of the document goes here...
+```
+
+### What happens on ingest
+
+For every new Document, the pipeline runs the following steps, in order:
+
+1. **Validate** that the referenced `projectId` (if any) and all `domains`
+   actually exist.
+2. **Generate an embedding** for the Document body via the configured
+   embedding provider (OpenRouter by default, behind a swappable
+   `EmbeddingProvider` interface) — this is what makes semantic search
+   possible later.
+3. Inside a single database transaction:
+   - **Create the Document** in `draft` status.
+   - **Store the embedding** alongside it.
+   - **Write any `part_of` / `relates_to` edges** to other Documents.
+   - **Re-check the orphan flag** on any Document this one now links to,
+     since a new incoming edge can turn a previously-orphaned Document into
+     a connected one.
+   - **Compute health flags** (`thin`, `unreviewed`, `orphan` — see
+     [The Document Review Workflow](/knowledge-base-review)).
+   - **Compute a confidence baseline** from the just-computed flags, age,
+     and word count.
+
+The project-existence check, domain check, and embedding call happen
+*before* the transaction opens, since they're slower external calls and
+shouldn't hold a database transaction open. Only the actual writes are
+transactional, so a failure partway through never leaves a partially-created
+Document behind.
+
+## Where content goes next
+
+Once ingested, a Document sits in `draft` status until a Domain Reviewer
+approves it. From there:
+
+- Published Documents are discoverable via the search UI and the `ask` MCP
+  tool — see [Searching & Asking the Knowledge Base](/knowledge-base-search).
+- Draft and deprecated Documents remain visible only to reviewers and admins
+  — see [The Document Review Workflow](/knowledge-base-review).
+- Admins can monitor the overall review backlog — see
+  [Queue Health Monitoring](/knowledge-base-queue-health).

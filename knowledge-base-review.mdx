@@ -1,0 +1,133 @@
+---
+title: "The Document Review Workflow"
+description: "Confidence scores, health flags, and the approve/deprecate review queue"
+---
+
+Every ingested Document starts life in `draft` status and is not visible to
+general search until a Domain Reviewer approves it. This article covers how
+that review works — the review queue, health flags, confidence scoring, and
+exactly what the approve/deprecate actions do — verified directly against
+the server actions that implement them
+(`apps/frontend/lib/actions/knowledge-review-actions.ts`), not just the UI.
+
+## Health flags
+
+Each Document can carry one or more content-health flags, shown as badges
+throughout the search and review UIs:
+
+| Flag | Meaning | How it's set |
+|---|---|---|
+| `thin` | Body is under the minimum word-count threshold to be considered substantive content. | Auto-computed at ingest. |
+| `unreviewed` | No `reviewedDate` has been set yet. | Auto-computed at ingest. |
+| `orphan` | Has no domains and no edges connecting it to any other Document. | Auto-computed at ingest, and re-checked whenever a later ingest adds an edge pointing at it. |
+| `stale` | Content hasn't been reviewed in a long time. | Set by a background job, not by ingest or the review UI. |
+| `drifted` | Content may have drifted from its source of truth. | Manually set only (no automated computation in the current implementation). |
+| `derived` | Content is derived from another source. | Manually set only. |
+
+`thin`, `unreviewed`, and `orphan` are fully recomputed at ingest time and
+are independent of a Document's status — flags don't change when a Document
+moves from draft to published.
+
+## Confidence
+
+Every Document has a **confidence** score between 0 and 1, computed once at
+ingest time from four signals: age, review recency, health-flag count, and
+body word count. It is never recomputed later — a Document's baseline
+confidence reflects the moment it was ingested (age 0, unreviewed), not its
+current state.
+
+A Domain Reviewer can set a **confidence override** when approving a
+Document. Wherever confidence is displayed, the override — if set — takes
+precedence over the computed baseline. The confidence shown in the review
+queue list and in the search results is the *effective* confidence: the
+override when present, otherwise the baseline.
+
+## The review queue
+
+The **Review Queue** page (`/dashboard/knowledge/review`) lists draft
+Documents in the domains you're a reviewer for. This list is
+domain-scoped server-side: it resolves which domains you can review via FGA
+first, then asks the Knowledge Base for drafts in exactly that domain set.
+
+One consequence worth knowing: a Knowledge Base admin who has *not* been
+separately granted `reviewer` on any domain sees an **empty** queue here —
+there is no "all domains" listing available to this page. Admins can still
+act on any individual Document directly (see below), just not discover it
+through this list view. Org-wide visibility into the backlog instead lives
+on [Queue Health Monitoring](/knowledge-base-queue-health).
+
+You can filter the queue list by health flag, the same client-side filter
+used on the search page.
+
+### Previewing a Document
+
+Clicking **Preview** on a queue row (or following a review deep-link) opens
+the full Document content in a dialog. This preview is a second, independent
+authorization check — it runs regardless of whether the Document actually
+appears in your queue, because a caller could reach this action directly
+with an arbitrary Document ID. The check branches on status:
+
+- **`published`** Documents use `canViewPublishedDocument` — the same rule
+  search uses (domain reviewer, or project viewer/contributor).
+- **`draft`** or **`deprecated`** Documents use `canEditDocument`
+  (reviewer on one of the Document's domains, or Knowledge Base admin).
+
+This status branching matters: an earlier version of this check used a
+draft-visibility predicate that treated anything non-`draft` as automatically
+viewable, which let any authenticated user read the full body of published
+Documents without an actual view grant. The current code checks the correct
+predicate per status instead.
+
+If the check fails, or the Document can't be found, the preview action
+returns nothing and the UI shows a generic "unable to load" message — never
+partial content.
+
+### Approving a Document
+
+The **Approve & Publish** button calls `approveDocument(id, confidenceOverride?)`,
+which:
+
+1. Fetches the Document (to read its current domains).
+2. Runs `canEditDocument` against those domains — reviewer on one of the
+   Document's domains, or Knowledge Base admin. This check happens *before*
+   any call to the Knowledge Base; if it fails, the promote endpoint is
+   never invoked.
+3. Calls the Knowledge Base's promote endpoint, optionally passing the
+   confidence override entered in the dialog.
+4. On success, moves the Document to `published` and revalidates the review
+   queue page.
+
+The confidence-override input in the UI is client-validated to be a number
+between 0 and 1 before the action is called; a value is only sent to
+`approveDocument` at all when the field is non-empty.
+
+### Deprecating a Document
+
+The **Deprecate** button calls `deprecateDocumentAction(id)`, which follows
+the identical fetch → authorize → write sequence as approve: fetch the
+Document, run `canEditDocument` against its domains, and only then call the
+Knowledge Base's deprecate endpoint.
+
+This is the action that had a real authorization bypass, fixed in code
+review: deprecate is meant for `published` (typically stale) Documents, but
+the original check used a predicate that short-circuited to `true` for any
+non-`draft` status — meaning on a `published` Document the "check" was a
+no-op, and any authenticated user could deprecate any published Document.
+The fix was to use `canEditDocument` throughout, which has no such
+short-circuit and always evaluates the actual reviewer/admin grant. Both
+`approveDocument` and `deprecateDocumentAction` use `canEditDocument`
+consistently today.
+
+## Summary: who can do what
+
+| Action | Authorization check | Enforced before the Knowledge Base call? |
+|---|---|---|
+| List review queue | `listUserResources(userId, 'domain', 'reviewer')` scopes the query | Yes — query itself is scoped |
+| Preview a Document | `canViewPublishedDocument` (published) or `canEditDocument` (draft/deprecated) | Yes |
+| Approve a Document | `canEditDocument` on the Document's domains | Yes |
+| Deprecate a Document | `canEditDocument` on the Document's domains | Yes |
+
+All four checks run in the frontend's server actions — the Knowledge Base
+service itself is authorization-agnostic and only validates a service token,
+so these server actions are the actual enforcement point for everything
+described above.

@@ -20,16 +20,53 @@
             ]
           },
           {
-            "group": "Documentation (in progress)",
+            "group": "Getting Started",
             "pages": [
               "getting-started",
+              "what-is-engineering-framework",
+              "creating-your-first-organization"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts",
+              "project-phases",
+              "framework-checklist"
+            ]
+          },
+          {
+            "group": "Framework MCP Server",
+            "pages": [
               "framework-mcp-server",
-              "claude-code-setup",
-              "knowledge-base",
+              "mcp-server-overview",
+              "mcp-server-tools",
+              "mcp-server-prompts"
+            ]
+          },
+          {
+            "group": "Permissions & Roles",
+            "pages": [
               "permissions",
               "permissions-explained",
-              "roles-management",
+              "roles-management"
+            ]
+          },
+          {
+            "group": "Documentation (in progress)",
+            "pages": [
+              "claude-code-setup",
               "github-sync"
+            ]
+          },
+          {
+            "group": "Knowledge Base",
+            "pages": [
+              "knowledge-base",
+              "knowledge-base-overview",
+              "knowledge-base-search",
+              "knowledge-base-review",
+              "knowledge-base-queue-health"
             ]
           }
         ]
