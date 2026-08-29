@@ -1,0 +1,94 @@
+---
+title: "Knowledge Base MCP Server Setup"
+description: "Connect Claude Code directly to the Knowledge Base MCP server to search and retrieve Knowledge Base Documents"
+---
+
+Connect Claude Code directly to the Knowledge Base MCP server
+(`apps/kbmcpserver`) to search and retrieve Knowledge Base Documents from
+your terminal.
+
+<Note>
+  Already connected to the [Framework MCP server](/claude-code-setup) for
+  planning work? You likely don't need this — its `knowledge_ask` tool
+  already proxies into the Knowledge Base for you. Connect directly to the
+  Knowledge Base MCP server only if you want Knowledge Base search/retrieval
+  from a session or client that isn't otherwise talking to the Framework MCP
+  server. See [Knowledge Base MCP Server: Overview](/knowledge-base-mcp-server)
+  for the full comparison.
+</Note>
+
+## Step 1: Get your server URL
+
+Unlike the Framework MCP server, there's currently no organization settings
+page that generates a pre-filled connection command for the Knowledge Base
+MCP server — you'll need the URL from your administrator or deployment:
+
+- **Local development**: `http://localhost:8082` (the server's default port).
+- **Production**: ask your administrator for the deployed URL. The service is
+  configured to deploy to fly.io as `engineeringframework-kbmcp`, i.e.
+  `https://engineeringframework-kbmcp.fly.dev`, but confirm with your
+  administrator before using this — deployment is tracked separately from
+  this server's core functionality and may not be live for your organization
+  yet.
+
+## Step 2: Add MCP Server to Claude Code
+
+Run this command in your terminal:
+
+```bash
+claude mcp add knowledge-base --transport http <your-kb-mcp-server-url>/mcp
+```
+
+Or add this to your `.claude/settings.json` manually:
+
+```json
+{
+  "mcpServers": {
+    "knowledge-base": {
+      "type": "http",
+      "url": "<your-kb-mcp-server-url>/mcp",
+      "note": "Engineering Framework Knowledge Base"
+    }
+  }
+}
+```
+
+Claude Code handles the Auth0 bearer token exchange as part of the MCP
+connection — you don't need to manage the token yourself.
+
+## Step 3: Add to your CLAUDE.md (optional)
+
+If you want standing context so Claude reaches for the Knowledge Base without
+being asked, add a section like this to your repository's `CLAUDE.md`:
+
+```markdown
+## Knowledge Base
+
+You have access to the Knowledge Base MCP server for searching prior
+engineering decisions, guides, and process docs.
+
+- Use `ask` to search when the user asks "have we done this before?",
+  "is there prior art for X?", or before proposing a design/decision that
+  might already be documented.
+- Use `get_by_id` to retrieve a specific Document's full content once you
+  have its `documentId` from an `ask` result.
+- Results are already filtered to what you're authorized to see — an empty
+  result set means no matching Documents exist (or none you can view), not a
+  broken connection.
+```
+
+See [Searching & Asking the Knowledge Base](/knowledge-base-search) for the
+full parameter reference for `ask` and `get_by_id`.
+
+## Step 4: Verify your setup
+
+1. In your terminal, navigate to your repository
+2. Ensure `.claude/settings.json` has been updated with the MCP server config
+3. Run `claude` to start a session
+4. Try: "Search the Knowledge Base for anything about \<a topic you know is
+   documented\>"
+
+If the connection fails, confirm the URL includes the `/mcp` path and that
+your Auth0 session has access to the same tenant the Knowledge Base MCP
+server is configured against — it's the same login you use for the
+Engineering Framework dashboard.

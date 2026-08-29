@@ -1,0 +1,89 @@
+---
+title: "Knowledge Base MCP Server: Overview"
+description: "What the Knowledge Base MCP server is, how it differs from the Framework MCP server, and when to use each"
+---
+
+## What it is
+
+The Knowledge Base MCP server (`apps/kbmcpserver`) exposes semantic search and
+retrieval over the Knowledge Base as a
+[Model Context Protocol](https://modelcontextprotocol.io) server. It is a
+separate, independently deployed and versioned service from the
+[Framework MCP server](/mcp-server-overview) (`apps/mcpserver`) — same
+transport (StreamableHTTP at `/mcp`), same Auth0 tenant and end users, but a
+different codebase, a different database, and a narrower purpose.
+
+## Why two MCP servers
+
+The Framework MCP server manages planning: projects, checklist items,
+artifacts, users, and organizations. The Knowledge Base MCP server does one
+thing — semantic search and retrieval of Knowledge Base Documents (decisions,
+guides, pitfalls, process docs). They're split into separate services
+deliberately:
+
+- **Independent deployment and database.** The Knowledge Base has its own
+  Postgres database (`KB_DATABASE_URL`, with pgvector for embeddings) and is
+  versioned and deployed independently of the Framework. Splitting the MCP
+  surface the same way keeps that boundary intact end to end, rather than
+  giving the Framework server direct database access into a service it
+  doesn't own.
+- **Different clients, different needs.** An agent that only needs to look
+  up prior art doesn't need — and shouldn't be granted — the full planning
+  and administration surface (`users_*`, `orgs_*`, `depts_*`, `projects_*`,
+  and so on).
+
+In practice, you rarely need to choose one or the other in isolation:
+
+- If you're **already using the Framework MCP server for planning** (writing
+  ADRs, reviewing artifacts, checking planning status), you don't need a
+  separate connection at all — the Framework MCP server's own
+  [`knowledge_ask` tool](/mcp-server-tools) proxies into the
+  Knowledge Base MCP server for you, forwarding your identity so results are
+  already filtered to what you're authorized to see. This is the tool
+  `planning_get_item_context` also uses internally to surface `priorArt` for
+  checklist items with a Knowledge Base mapping.
+- If you want an agent to **search or retrieve Knowledge Base content
+  directly** — outside of a planning session, or from a tool/client that
+  doesn't otherwise talk to the Framework MCP server — connect to the
+  Knowledge Base MCP server directly, as described in
+  [Knowledge Base MCP Server Setup](/knowledge-base-mcp-setup).
+
+## Authentication
+
+Like the Framework MCP server, every request to the Knowledge Base MCP
+server's `/mcp` endpoint requires a valid Auth0 bearer token
+(`Authorization: Bearer <token>`), verified via `express-jwt`/`jwks-rsa`
+against the same Auth0 tenant used by the Framework MCP server and the
+frontend — it's the same end users, authenticating against a different
+service.
+
+## Authorization
+
+Every result is checked against OpenFGA before it's returned — the same
+`canViewPublishedDocument` and `canEditDocument` checks
+[apps/frontend's search and review pages](/knowledge-base-search) use, via a
+read-only lookup that resolves the caller's Auth0 identity to their Framework
+user ID (the identity OpenFGA tuples are keyed on). An MCP caller only ever
+sees Documents their Framework user is authorized to view — unauthorized
+results are filtered out of `ask`'s response entirely, and `get_by_id`
+throws a clean denial rather than returning partial or redacted content.
+
+## Tools
+
+The Knowledge Base MCP server registers three tools:
+
+- **`ask`** — semantic search over the Knowledge Base.
+- **`get_by_id`** — full Document retrieval by ID.
+- **`kb_health_check`** — a diagnostic/scaffold tool confirming the
+  connection and auth are working; not a real Knowledge Base capability.
+
+For parameters and behavior, see
+[Searching & Asking the Knowledge Base](/knowledge-base-search), which
+documents `ask` and `get_by_id` in full — this page won't repeat that detail.
+
+## Getting connected
+
+See [Knowledge Base MCP Server Setup](/knowledge-base-mcp-setup) for the
+Claude Code connection steps. Other MCP clients connect the same way, over
+the `/mcp` StreamableHTTP endpoint with an Auth0 bearer token, using their
+own MCP server configuration UI.

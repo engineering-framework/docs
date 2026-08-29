@@ -68,6 +68,13 @@
               "knowledge-base-review",
               "knowledge-base-queue-health"
             ]
+          },
+          {
+            "group": "Knowledge Base MCP Server",
+            "pages": [
+              "knowledge-base-mcp-server",
+              "knowledge-base-mcp-setup"
+            ]
           }
         ]
       }
