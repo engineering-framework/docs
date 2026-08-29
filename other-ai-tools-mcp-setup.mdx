@@ -1,0 +1,181 @@
+---
+title: "Connecting Other AI Tools"
+description: "Connect OpenAI Codex, GitHub Copilot, or Gemini CLI to the Framework and Knowledge Base MCP servers"
+---
+
+The Framework MCP server and Knowledge Base MCP server both use the
+[StreamableHTTP MCP transport](https://modelcontextprotocol.io/) with Auth0
+JWT authentication. This page is a quick-reference for connecting AI coding
+tools other than Claude Code. For what each server does and its full tool/
+prompt reference, see [Claude Code Setup](/claude-code-setup) (Framework
+server) and [Knowledge Base MCP Server Setup](/knowledge-base-mcp-setup) (KB
+server) — the walkthroughs there explain the servers themselves in more
+depth than this page repeats.
+
+<Note>
+  All three tools below were verified against each vendor's own current MCP
+  documentation while writing this page. If a config snippet stops working,
+  check that vendor's docs (linked in each section) — MCP client support
+  changes quickly.
+</Note>
+
+## A note on authentication
+
+- **Framework MCP server**: implements a full OAuth 2.0 authorization
+  flow (with Dynamic Client Registration) that proxies to Auth0. Any MCP
+  client that supports OAuth-based remote server auth — including all three
+  tools below — can complete a normal browser login the first time it
+  connects, the same way Claude Code does.
+- **Knowledge Base MCP server**: only validates an Auth0-issued bearer
+  token; it does **not** expose OAuth discovery/authorization endpoints.
+  Clients that rely on automatic OAuth login (rather than a manually
+  supplied bearer token) won't be able to auto-authenticate against it.
+  Ask your administrator for a valid access token for the same Auth0
+  tenant/audience the Knowledge Base MCP server is configured against, and
+  supply it as a static bearer token / header using the options below.
+
+## OpenAI Codex
+
+Codex CLI, the ChatGPT desktop app, and the Codex IDE extension share one
+MCP configuration. Codex supports Streamable HTTP servers with bearer-token
+and OAuth authentication (including CIMD/DCR). See
+[OpenAI's Model Context Protocol docs](https://developers.openai.com/codex/mcp)
+for the full reference.
+
+### Framework MCP server (OAuth)
+
+```bash
+codex mcp add engineering-framework --url <your-mcp-server-url>/mcp
+```
+
+Codex will print an OAuth callback URL and prompt you to log in the first
+time you use the server; run `codex mcp login engineering-framework` to
+(re)authenticate manually.
+
+### Knowledge Base MCP server (bearer token)
+
+Add this to `~/.codex/config.toml` (or a project-scoped `.codex/config.toml`):
+
+```toml
+[mcp_servers.knowledge-base]
+url = "<your-kb-mcp-server-url>/mcp"
+bearer_token_env_var = "KB_MCP_BEARER_TOKEN"
+```
+
+Then set `KB_MCP_BEARER_TOKEN` in your shell environment to the access token
+from your administrator before starting Codex.
+
+## GitHub Copilot
+
+GitHub Copilot's remote MCP support depends on the surface you're using.
+**Copilot CLI** and the **Copilot Chat IDE extensions** (VS Code, Visual
+Studio, JetBrains, Xcode, Eclipse) all support remote HTTP MCP servers with
+either a static bearer token or an OAuth flow — configuration format differs
+per surface. See
+[Extending GitHub Copilot Chat with MCP servers](https://docs.github.com/en/copilot/how-tos/provide-context/use-mcp-in-your-ide/extend-copilot-chat-with-mcp)
+and
+[Adding MCP servers for GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)
+for the authoritative reference.
+
+### Copilot CLI
+
+```bash
+copilot mcp add --transport http engineering-framework <your-mcp-server-url>/mcp
+copilot mcp add --transport http knowledge-base <your-kb-mcp-server-url>/mcp \
+  --header "Authorization: Bearer YOUR_KB_ACCESS_TOKEN"
+```
+
+The Framework server supports OAuth discovery, so `copilot mcp add` without a
+header should trigger a login prompt; the Knowledge Base server needs the
+static `Authorization` header shown above since it has no OAuth flow of its
+own.
+
+Equivalent `~/.copilot/mcp-config.json` entries:
+
+```json
+{
+  "mcpServers": {
+    "engineering-framework": {
+      "type": "http",
+      "url": "<your-mcp-server-url>/mcp"
+    },
+    "knowledge-base": {
+      "type": "http",
+      "url": "<your-kb-mcp-server-url>/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_KB_ACCESS_TOKEN"
+      }
+    }
+  }
+}
+```
+
+### VS Code / Visual Studio / JetBrains / Xcode / Eclipse (Copilot Chat)
+
+Add to `.vscode/mcp.json` (VS Code) or the equivalent `mcp.json` for your
+IDE — note this uses a top-level `servers` key, not `mcpServers`, and is a
+**different file** from Copilot CLI's config:
+
+```json
+{
+  "servers": {
+    "engineering-framework": {
+      "url": "<your-mcp-server-url>/mcp"
+    },
+    "knowledge-base": {
+      "url": "<your-kb-mcp-server-url>/mcp",
+      "requestInit": {
+        "headers": {
+          "Authorization": "Bearer YOUR_KB_ACCESS_TOKEN"
+        }
+      }
+    }
+  }
+}
+```
+
+For the Framework server, use the CodeLens **Auth** action above the server
+entry in `mcp.json` to complete the OAuth login.
+
+## Gemini CLI
+
+Gemini CLI supports Streamable HTTP MCP servers (via `httpUrl`), including
+automatic OAuth discovery and static headers. See
+[MCP servers with Gemini CLI](https://geminicli.com/docs/tools/mcp-server/)
+for the full reference.
+
+```bash
+gemini mcp add --transport http engineering-framework <your-mcp-server-url>/mcp
+gemini mcp add --transport http knowledge-base <your-kb-mcp-server-url>/mcp \
+  --header "Authorization: Bearer YOUR_KB_ACCESS_TOKEN"
+```
+
+Equivalent `settings.json` entries:
+
+```json
+{
+  "mcpServers": {
+    "engineering-framework": {
+      "httpUrl": "<your-mcp-server-url>/mcp"
+    },
+    "knowledge-base": {
+      "httpUrl": "<your-kb-mcp-server-url>/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_KB_ACCESS_TOKEN"
+      }
+    }
+  }
+}
+```
+
+The Framework server's OAuth endpoints are auto-discovered — on first
+connection Gemini CLI opens a browser for login. Use `/mcp auth
+engineering-framework` inside a session to re-authenticate if needed.
+
+## Tools not covered here
+
+We looked for other MCP clients worth documenting alongside these three and
+didn't find another one common enough on engineering teams to warrant its
+own section as of this writing. If you're using a client not listed here,
+check whether it supports the Streamable HTTP MCP transport in its own
+docs — if so, the URL and bearer-token pattern above should still apply.

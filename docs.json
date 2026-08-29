@@ -56,6 +56,7 @@
             "group": "Documentation (in progress)",
             "pages": [
               "claude-code-setup",
+              "other-ai-tools-mcp-setup",
               "github-sync"
             ]
           },
