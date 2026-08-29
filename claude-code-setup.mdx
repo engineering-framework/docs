@@ -1,0 +1,87 @@
+---
+title: "Claude Code Setup"
+description: "Connect Claude Code to the Engineering Framework MCP server to use planning workflow tools directly in your terminal"
+---
+
+Connect Claude Code to the Engineering Framework MCP server to use planning
+workflow tools directly in your terminal.
+
+## Step 1: Add MCP Server to Claude Code
+
+Run this command in your terminal:
+
+```bash
+claude mcp add engineering-framework --transport http <your-mcp-server-url>/mcp
+```
+
+Or add this to your `.claude/settings.json` manually:
+
+```json
+{
+  "mcpServers": {
+    "engineering-framework": {
+      "type": "http",
+      "url": "<your-mcp-server-url>/mcp",
+      "note": "Engineering Framework Planning Tools"
+    }
+  }
+}
+```
+
+<Note>
+  Your organization's exact CLI command and JSON config (with your MCP server
+  URL already filled in) are available on the
+  [Claude Code Integration](https://www.engineeringframework.dev/dashboard/settings)
+  card in your organization settings.
+</Note>
+
+## Step 2: Add to your CLAUDE.md
+
+Add a section like this to your repository's `CLAUDE.md` file to give Claude
+standing context about the Engineering Framework planning tools. The
+organization settings page generates a copy of this snippet pre-filled with
+your organization (and, where applicable, project) IDs — download it from
+there rather than retyping it by hand.
+
+### When to use this tool
+
+Use this tool when a user wants to:
+
+- Plan or review an engineering initiative or project
+- Generate planning artifacts (SLOs, rollback plans, ADRs, etc.)
+- Check the planning health of a project
+- Review existing planning documentation
+
+### How to handle project references
+
+When a user mentions a project by name, call `projects_list` with your
+organization ID to find the matching project and get its ID before invoking
+any prompts. If multiple projects match, ask the user to clarify.
+
+If your CLAUDE.md is scoped to a single project, you can skip this step and
+use that project's ID directly whenever the user refers to "the project" or
+"this project" without specifying one.
+
+### Mapping requests to prompts
+
+| User says | Invoke |
+| --- | --- |
+| "start planning / review planning health / what's missing" | `start_planning_session` with the resolved `projectId` |
+| "generate / write / create / help me with [artifact name]" | `generate_artifact` with `projectId` and the relevant `checklistItemSlug` (call `framework_list_items` to find the slug if needed) |
+| "review / check / evaluate [artifact]" | `review_artifact` with `projectId` and `checklistItemSlug` |
+
+### Important rules
+
+- Always resolve a `projectId` before invoking a prompt — never guess it
+- Never mark a checklist item complete without an artifact URL from the user
+- Never generate artifacts outside of the `generate_artifact` workflow
+- If the user's org has no phases configured, suggest they configure phases
+  in the Engineering Framework app before starting a session
+
+## Step 3: Verify your setup
+
+1. In your terminal, navigate to your repository
+2. Ensure `.claude/settings.json` has been updated with the MCP server config
+3. Ensure `CLAUDE.md` has been updated with the snippet above
+4. Run `claude` to start a session
+5. Try: "Show me the planning status for my projects"
