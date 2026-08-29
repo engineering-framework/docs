@@ -5,19 +5,16 @@ description: "What the Framework MCP server is, why you'd connect an AI agent to
 
 ## What it is
 
-The Framework MCP server (`apps/mcpserver`) exposes Engineering Framework's
-planning and administration operations as a
-[Model Context Protocol](https://modelcontextprotocol.io) server. It runs as
-its own deployable service (on fly.io) and lets any MCP-compatible AI client —
-Claude Code, Claude Desktop, or another agent — read and write the same data
-your team manages through the web app, using the same authentication and
-authorization rules.
+The Framework MCP server exposes Engineering Framework's planning and
+administration operations as a
+[Model Context Protocol](https://modelcontextprotocol.io) server. It lets
+any MCP-compatible AI client — Claude Code, Claude Desktop, or another agent
+— read and write the same data your team manages through the web app, using
+the same authentication and authorization rules.
 
-Under the hood it is a thin transport layer: every tool handler validates its
-input, builds an `AuthContext` from the caller's authenticated identity, and
-delegates the actual work to `@repo/core/operations` — the same business
-logic the web frontend uses. There is no separate code path or relaxed
-permission model for agent access.
+There is no separate code path or relaxed permission model for agent access:
+every tool call is authenticated as a real user and goes through the exact
+same permission checks and business logic the web dashboard uses.
 
 ## Why connect an agent to it
 
@@ -46,33 +43,21 @@ tool calls together with instructions for the agent to follow).
 
 ## How it fits into the product
 
-```
-┌─────────────────┐        ┌──────────────────┐        ┌─────────────────┐
-│   AI agent       │  MCP   │  Framework MCP    │  calls │   @repo/core      │
-│ (Claude Code,    │◄──────►│  server            │◄──────►│   operations       │
-│  Claude Desktop)  │  HTTP  │  (apps/mcpserver)  │        │  (data + perms)   │
-└─────────────────┘        └──────────────────┘        └─────────────────┘
-                                     ▲
-                                     │ same AuthContext,
-                                     │ same permission checks
-                                     ▼
-                            ┌──────────────────┐
-                            │   Web frontend    │
-                            │  (apps/frontend)   │
-                            └──────────────────┘
-```
+The MCP server and the web dashboard are two doors into the same house: an
+AI agent connects to the MCP server, which enforces the same authentication
+and permissions as the dashboard, and reads and writes the same underlying
+data.
 
 - **Authentication**: the agent's MCP client presents a valid bearer token on
-  every request (`Authorization: Bearer <token>`), verified using standard
-  JWT validation.
+  every request, the same kind of token a browser session uses.
 - **Authorization**: each tool call is checked against the same permission
-  model before it runs. Tools marked `fgaControlled` are hidden from
-  `tools/list` entirely if the caller can't view them, and rejected at
-  execution time if the caller can't execute them — an agent never sees or
-  successfully calls a tool outside the user's actual permissions.
-- **Data**: all reads and writes go through the same
-  `@repo/core/operations` layer as the web app, so state stays consistent
-  regardless of which surface — dashboard or agent — made the change.
+  model a dashboard user would go through. A tool is hidden entirely from an
+  agent that can't view it, and rejected at execution time if the caller
+  can't actually perform it — an agent never sees or successfully calls a
+  tool outside that person's real permissions.
+- **Data**: all reads and writes go through the same underlying logic the
+  web app uses, so state stays consistent regardless of whether a person or
+  an agent made the change.
 
 ## Getting connected
 
@@ -91,9 +76,9 @@ Once connected, see:
   the natural-language phrasing that triggers each one
 
 <Note>
-  There's a second, separate MCP server for the Knowledge Base
-  (`apps/kbmcpserver`) — search and retrieval over Knowledge Base Documents,
-  not planning or administration. The Framework MCP server's own
+  There's a second, separate MCP server for the Knowledge Base — search and
+  retrieval over Knowledge Base Documents, not planning or administration.
+  The Framework MCP server's own
   `knowledge_ask` tool already proxies into it, so you often don't need a
   separate connection. See [Knowledge Base MCP Server: Overview](/knowledge-base-mcp-server)
   for when you'd connect to it directly instead.

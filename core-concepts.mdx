@@ -3,111 +3,66 @@ title: "Core Concepts: Organizations, Departments, Projects"
 description: "The three-level hierarchy and how permissions cascade through it"
 ---
 
-Engineering Framework organizes everything around a three-level hierarchy:
-**Organizations** contain **Departments**, and both Organizations and
-Departments can own **Projects**. Permissions are checked against this same
-hierarchy, so access granted higher up cascades down automatically.
+Engineering Framework organizes everything around a simple three-level
+structure: **Organizations** contain **Departments**, and both Organizations
+and Departments can own **Projects**. Access follows this same structure, so
+a permission granted higher up automatically applies to everything beneath
+it.
 
 ## The hierarchy
 
 ### Organization
 
-The top-level tenant. Every user, department, and project ultimately belongs
-to one organization (`organizationId` on `User`, `Department`, and
-`Project`). An organization also owns its own configuration:
+Your company or team, as a whole. Every person, department, and project
+belongs to exactly one organization. An organization also holds its own
+settings:
 
-- Role templates (`RoleTemplate`) — named sets of permission grants, either
-  system-defined (`organizationId: null`) or org-specific
-- Project phases (`ProjectPhase`) — either system defaults or org-specific
-  overrides
-- Org-specific checklist content (`OrgChecklistCategory`,
-  `OrgChecklistSubcategory`, `OrgChecklistItem`, `OrgChecklistTemplate`),
-  typically synced from GitHub — see [GitHub Sync](/github-sync)
-- Phase → checklist-category mappings (`PhaseChecklistCategoryMap`)
-- An optional GitHub Sync configuration (`OrgGithubSyncConfig`)
+- **Role templates** — reusable bundles of permissions you can hand out to
+  people (see [Roles Management](/roles-management))
+- **Project phases** — the lifecycle stages your projects move through (see
+  [Project Phases](/project-phases))
+- **Custom checklist content** — your own categories, items, and templates on
+  top of the built-in framework checklist, typically managed through
+  [GitHub Sync](/github-sync)
 
 ### Department
 
-A sub-unit of an organization (`Department.organizationId`). Departments
-group users and projects within an org — a `slug` is unique per organization
-(`@@unique([organizationId, slug])`), not globally. A user's
-`departmentId` is optional; a department can be deleted without deleting its
-organization (`onDelete: Cascade` from the org side), and deleting a
-department sets its users' `departmentId` to null rather than deleting the
-users (`onDelete: SetNull`).
+A sub-unit of your organization — a team, a business unit, whatever grouping
+makes sense for you. Departments help you organize people and projects
+without needing a separate organization for every team. Not everyone needs
+to belong to a department; it's optional. Deleting a department doesn't
+delete the people in it — they simply become unassigned to any department.
 
 ### Project
 
-A project belongs to exactly one organization and, optionally, one
-department (`Project.departmentId` is nullable). Every project also has a
-required `phaseId` pointing at a `ProjectPhase` — see
-[Project Phases & Phase Mapping](/project-phases). Projects track:
+The actual unit of work. A project belongs to one organization and,
+optionally, one department. Every project also has:
 
-- `ProjectMember` — who's involved and in what role (`tech_lead`,
-  `product_manager`, `sre`, `engineering_manager`, etc.)
-- `ProjectChecklistItem` — per-project status (`not_started`,
-  `in_progress`, `complete`, `not_applicable`) for each checklist item that
-  applies to that project
-- `ProjectIntegrationConfig` — optional git integration (provider, repo URL,
-  branch, docs path) for where planning artifacts live
+- **Members** — who's involved, and in what role (e.g. tech lead, product
+  manager, SRE)
+- **A checklist status** — how far along the project is against each
+  applicable framework checklist item
+- **A current phase** — see [Project Phases](/project-phases)
+- **An optional connection to a code repository**, if you want planning
+  artifacts linked to where the actual work happens
 
 ## How permissions cascade
 
-Authorization is enforced through a relationship-based access control model,
-accessed through `checkPermission` / `assertPermission` in
-`@repo/core/permissions`. Every database operation that needs authorization
-calls one of these with a `userId`, a `relation` (e.g. `admin`, `member`,
-`can_view_project`), and a resource (`{ type, id }`).
+Access in Engineering Framework flows downhill: if you're granted
+administrative access at the organization level, you automatically have that
+same access over every department and project underneath it — you don't need
+to be granted access separately at each level.
 
-The hierarchy is what makes cascading permissions work: relationship tuples
-encode **parent relationships** between resource types, and the authorization model
-is defined so that a relation granted on a parent automatically satisfies
-checks on its children.
+- **Department access** follows from organization access. An org admin can
+  manage every department without being added to each one individually.
+- **Project access** works the same way. An org admin can view, edit, and
+  manage every project in the organization without being added as a member
+  of each one.
 
-- **Department → Organization**: when a department is created, the app
-  writes a `parent` tuple from the organization to the department
-  (`organization:<id>` `parent` `department:<id>`). Any user with `admin` on
-  the organization automatically satisfies `admin` checks on its child
-  departments — you don't need to grant department admin separately.
+In other words: granting someone admin access on the organization is enough
+for them to administer everything underneath it. More targeted access — like
+adding one person to a single project — is granted directly on that project
+instead.
 
-- **Project → Organization**: similarly, when a project is created, a
-  `parent_org` tuple is written from the organization to the project
-  (`organization:<id>` `parent_org` `project:<id>`). This means org admins
-  automatically satisfy the project-level capability checks
-  (`can_view_project`, `can_edit_project`, `can_delete_project`,
-  `can_manage_project_members`) without any per-project grant.
-
-In other words: granting someone `admin` on an organization is enough for
-them to administer every department and project underneath it. Finer-grained
-access (e.g. a single department member, or a single project contributor)
-is granted directly on that specific resource instead of at the
-organization level.
-
-## Roles vs. capabilities
-
-The `RelationType` union used throughout `@repo/core/permissions` mixes two
-kinds of relations:
-
-- **Identity-based roles** — `owner`, `admin`, `member`, `viewer`, `editor`,
-  `contributor`, `reviewer`: "you *are* a viewer of this resource."
-- **Action-based capabilities** — `execute`, `view`,
-  `can_create_project`, `can_view_project`, `can_edit_project`,
-  `can_delete_project`, `can_manage_project_members`,
-  `can_view_planning_status`, `can_update_planning_item`: "you *can*
-  perform this specific action."
-
-Operations typically check a capability (e.g. `can_edit_project`) rather
-than a raw role, and the authorization model resolves whether the caller's
-role — direct or inherited through the organization/department/project
-hierarchy — grants that capability.
-
-## Where this is enforced
-
-Every operation in `@repo/core/operations` follows the same pattern:
-validate input with Zod, check authorization via `assertPermission` (or
-`checkPermission` for conditional logic), perform the database operation,
-sync any new relationships to the authorization store, and return a typed
-result or throw an `AppError`. Both the frontend (via server actions) and the MCP server (via
-tool handlers) build an `AuthContext` and delegate to the same core
-operations, so the same permission model applies regardless of which
-surface a request comes through.
+For the full breakdown of what each role can actually do, see
+[Permissions & Roles Explained](/permissions-explained).

@@ -3,47 +3,32 @@ title: "Queue Health Monitoring"
 description: "Org-wide visibility into the draft-review backlog"
 ---
 
-**Queue Health Monitoring** gives
-Knowledge Base admins an org-wide view of the draft-review backlog — across
-every domain, not just the domains an individual reviewer is scoped to.
+**Queue Health Monitoring** gives org admins an org-wide view of the
+draft-review backlog — across every domain, not just the ones an individual
+reviewer is responsible for.
 
 ## Why it exists
 
-The [review queue](/knowledge-base-review) is intentionally scoped to the
-domains a given reviewer is responsible for. That's the right default for
-doing review work, but it means no single reviewer's queue view shows the
-whole picture — and an admin with no personal `reviewer` grant on any domain
-sees an empty review queue entirely. Queue Health closes that gap: it's a
-read-only, org-wide monitoring view built specifically for admins to spot a
-growing or stuck backlog before it becomes a problem.
+The [Review Queue](/knowledge-base-review) is intentionally scoped to the
+domains a given reviewer works in — that's the right default for actually
+doing review work, but it means no single reviewer's queue shows the whole
+picture, and an admin without a personal reviewer assignment sees an empty
+queue there. Queue Health closes that gap: a read-only, org-wide view built
+for admins to spot a growing or stuck backlog before it becomes a problem.
 
-This page is read-only. There's no approve, deprecate, or escalation action
-here — only the numbers. Acting on a specific Document still happens from
-the [Review Queue](/knowledge-base-review) page.
+This page is read-only — there's no approve, deprecate, or escalation action
+here, only the numbers. To act on a specific Document, use the
+[Review Queue](/knowledge-base-review) page.
 
 ## Who can see it
 
-Access requires being a Knowledge Base admin for your organization
-(`isKnowledgeBaseAdmin`, which resolves to the `organization#admin`
-relation — there is no separate `domain#admin` relation). A caller without
-an organization, or without the admin grant, is denied with a
-`ForbiddenError` rather than being shown an empty dashboard.
+This page is available to org admins only.
 
 ## What it shows
 
-The page has three sections:
-
-1. **Total backlog** — the total count of draft Documents awaiting review,
-   across every domain in the Knowledge Base.
-2. **Backlog by domain** — a table breaking that total down per domain,
-   sorted by count descending, so the domains with the largest backlogs
-   surface first.
-3. **Oldest unreviewed Documents** — a highlighted list of the
-   longest-waiting drafts, each showing its type, word count, creation date,
-   domains, and confidence score, so an admin can quickly identify Documents
-   that may need reviewer attention or reassignment.
-
-All of this data comes from a single Knowledge Base endpoint
-(`GET /api/documents/review-queue-health`), which is authorization-agnostic
-by design — the admin check described above is the actual enforcement
-point, run in the frontend before this data is ever fetched.
+1. **Total backlog** — how many draft Documents are waiting for review,
+   across every domain.
+2. **Backlog by domain** — the same total broken down per domain, largest
+   backlog first, so you can see where attention is most needed.
+3. **Oldest unreviewed Documents** — the longest-waiting drafts, so you can
+   quickly spot content that may need reviewer attention or reassignment.

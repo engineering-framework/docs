@@ -3,15 +3,13 @@ title: "Tools Reference"
 description: "Every tool exposed by the Framework MCP server, with parameters and behavior"
 ---
 
-This page documents every tool registered by the Framework MCP server
-(`apps/mcpserver/src/tools/`), grouped the way they're registered in
-`src/server/app.ts`. Parameter names, requiredness, and behavior below are
-taken directly from each tool's Zod input schema and handler — verified
-against source as of this writing, not inferred from naming conventions.
+This page documents every tool exposed by the Framework MCP server, grouped
+by what they do.
 
 <Note>
-  Most tools are `fgaControlled`: they're hidden from `tools/list` if the
-  caller can't view them, and rejected at execution time if the caller can't
+  Most tools are permission-controlled: they're hidden from an AI assistant
+  entirely if that person can't view them, and rejected at execution time if
+  the caller can't
   execute them. Only `context_get` and `knowledge_ask` are not
   permission-controlled (see their entries below for why).
 </Note>
@@ -343,14 +341,12 @@ Knowledge Base mapping.
 ### `knowledge_ask`
 
 Search the Knowledge Base for prior art relevant to the current planning
-task (existing designs, decisions, documented patterns). Proxies to
-`apps/kbmcpserver`'s own `ask` tool over a real MCP client connection,
-forwarding the caller's authentication token so results are already filtered
-to what that user is authorized to see. Authorization isn't enforced at this
-layer — it's enforced downstream by `apps/kbmcpserver`. Degrades gracefully: if the
-Knowledge Base service is unreachable, returns `available: false` with an
-empty result set instead of failing the call — treat that as "lookup wasn't
-possible," not "no prior art exists."
+task (existing designs, decisions, documented patterns). Proxies to the
+Knowledge Base MCP server's own `ask` tool, forwarding the caller's identity
+so results are already filtered to what that user is authorized to see.
+Degrades gracefully: if the Knowledge Base service is unreachable, returns
+`available: false` with an empty result set instead of failing the call —
+treat that as "lookup wasn't possible," not "no prior art exists."
 
 | Parameter | Required | Description |
 | --- | --- | --- |

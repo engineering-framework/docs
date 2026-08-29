@@ -5,98 +5,62 @@ description: "Purpose of the Knowledge Base and how content gets in"
 
 The Knowledge Base is a searchable store of your organization's engineering
 knowledge — decisions, guides, pitfalls, and process docs — that both people
-and AI agents can query. Content is written as Markdown, ingested with a bit
-of structured metadata, and made available through a search UI in the
-dashboard and through MCP tools for AI clients.
+and AI assistants can search. This is the foundation of Engineering
+Framework's **agentic memory layer**: instead of an AI assistant re-deriving
+an answer your team already worked out six months ago, it can search the
+Knowledge Base and find the actual decision, with the reasoning behind it.
+
+## Why this matters
+
+Most engineering knowledge lives in people's heads, old Slack threads, or
+documents nobody can find again. That means the same questions get
+re-litigated, the same mistakes get repeated, and new team members (human or
+AI) have no way to learn from what's already been figured out. The Knowledge
+Base gives that knowledge a permanent, searchable home.
 
 ## What lives in the Knowledge Base
 
-Every piece of content is a **Document**: a title, a Markdown body, a
-`type` (e.g. decision, guide, pitfall, process), and metadata that determines
-how it's organized and discovered:
+Each piece of content is a **Document** — a title, written content, a type
+(decision, guide, pitfall, or process), and some organizing information:
 
-- **domains** — topical areas a Document belongs to (e.g. `backend`,
-  `auth`). Domain Reviewers are granted review/approval rights per domain.
-- **projectId** — optionally scopes a Document to a single project instead
-  of (or in addition to) a domain.
-- **tags**, **appliesTo**, **anchors**, **sources** — additional metadata
-  used for filtering and traceability back to source material.
-- **edges** (`part_of` / `relates_to`) — links to other Documents, used to
-  build a lightweight knowledge graph and to determine whether a Document is
-  an orphan (see [The Document Review Workflow](/knowledge-base-review)).
+- **Domains** — the subject areas a Document belongs to (e.g. "Backend",
+  "Auth"). Each domain has its own reviewers, who approve content for that
+  area.
+- **Project** — a Document can optionally be tied to a specific project,
+  instead of or in addition to a domain.
+- **Tags and related links** — additional ways to filter and connect
+  Documents to each other.
 
-Every Document starts in `draft` status and must be approved by a Domain
-Reviewer before it becomes `published` and visible to general search — see
+Every Document starts as a **draft** and must be approved by a reviewer
+before it becomes visible to general search — see
 [The Document Review Workflow](/knowledge-base-review) for that process.
 
-## How content gets in: ingestion
+## How content gets added
 
-Content enters the Knowledge Base through a single **ingest pipeline**
-(`ingestDocumentFields`), shared by two entry points:
+Content is written as Markdown and added to the Knowledge Base either
+through a command-line tool (for anyone comfortable with a terminal) or
+programmatically as part of another workflow. Either way, every new Document
+goes through the same steps automatically:
 
-1. **CLI ingest** (`ingestDocument`) — reads a local Markdown file with a
-   YAML front-matter block, splits front matter from body, and validates the
-   front matter (`title` and `type` are required; everything else is
-   optional and defaults sensibly).
-2. **HTTP ingest route** (`POST /api/documents/ingest`) — the same
-   validated-fields pipeline, for programmatic callers that already have
-   parsed fields rather than a file on disk.
-
-A Markdown file for ingestion looks like this:
-
-```markdown
----
-title: "Why we chose relationship-based access control"
-type: decision
-domains:
-  - backend
-  - auth
-tags:
-  - authorization
-edges:
-  relates_to:
-    - doc-id-of-a-related-document
----
-
-The actual Markdown content of the document goes here...
-```
-
-### What happens on ingest
-
-For every new Document, the pipeline runs the following steps, in order:
-
-1. **Validate** that the referenced `projectId` (if any) and all `domains`
-   actually exist.
-2. **Generate an embedding** for the Document body via the configured
-   embedding provider (OpenRouter by default, behind a swappable
-   `EmbeddingProvider` interface) — this is what makes semantic search
-   possible later.
-3. Inside a single database transaction:
-   - **Create the Document** in `draft` status.
-   - **Store the embedding** alongside it.
-   - **Write any `part_of` / `relates_to` edges** to other Documents.
-   - **Re-check the orphan flag** on any Document this one now links to,
-     since a new incoming edge can turn a previously-orphaned Document into
-     a connected one.
-   - **Compute health flags** (`thin`, `unreviewed`, `orphan` — see
-     [The Document Review Workflow](/knowledge-base-review)).
-   - **Compute a confidence baseline** from the just-computed flags, age,
-     and word count.
-
-The project-existence check, domain check, and embedding call happen
-*before* the transaction opens, since they're slower external calls and
-shouldn't hold a database transaction open. Only the actual writes are
-transactional, so a failure partway through never leaves a partially-created
-Document behind.
+1. It's checked against your organization's projects and domains, so it's
+   filed correctly.
+2. It's indexed for **semantic search** — meaning people and AI assistants
+   can find it by describing what they're looking for, not just by matching
+   exact keywords.
+3. It's checked for a few basic content-health signals (see
+   [The Document Review Workflow](/knowledge-base-review)) and given a
+   starting confidence score, so reviewers know what needs the most
+   attention.
 
 ## Where content goes next
 
-Once ingested, a Document sits in `draft` status until a Domain Reviewer
-approves it. From there:
+Once added, a Document sits as a draft until a reviewer approves it. From
+there:
 
-- Published Documents are discoverable via the search UI and the `ask` MCP
-  tool — see [Searching & Asking the Knowledge Base](/knowledge-base-search).
-- Draft and deprecated Documents remain visible only to reviewers and admins
-  — see [The Document Review Workflow](/knowledge-base-review).
-- Admins can monitor the overall review backlog — see
-  [Queue Health Monitoring](/knowledge-base-queue-health).
+- Approved Documents are discoverable through the search page in the
+  dashboard, and through your AI assistant if it's connected — see
+  [Searching & Asking the Knowledge Base](/knowledge-base-search).
+- Drafts and retired Documents stay visible only to reviewers and admins —
+  see [The Document Review Workflow](/knowledge-base-review).
+- Admins can monitor how the review backlog is trending across the whole
+  organization — see [Queue Health Monitoring](/knowledge-base-queue-health).

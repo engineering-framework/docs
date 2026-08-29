@@ -5,13 +5,11 @@ description: "What the Knowledge Base MCP server is, how it differs from the Fra
 
 ## What it is
 
-The Knowledge Base MCP server (`apps/kbmcpserver`) exposes semantic search and
-retrieval over the Knowledge Base as a
-[Model Context Protocol](https://modelcontextprotocol.io) server. It is a
-separate, independently deployed and versioned service from the
-[Framework MCP server](/mcp-server-overview) (`apps/mcpserver`) — same
-transport (StreamableHTTP at `/mcp`), same authentication tenant and end users, but a
-different codebase, a different database, and a narrower purpose.
+The Knowledge Base MCP server exposes semantic search and retrieval over the
+Knowledge Base as a [Model Context Protocol](https://modelcontextprotocol.io)
+server. It is a separate, independently deployed service from the
+[Framework MCP server](/mcp-server-overview) — same connection method, same
+sign-in, but a different service with a narrower purpose.
 
 ## Why two MCP servers
 
@@ -28,8 +26,8 @@ deliberately:
   doesn't own.
 - **Different clients, different needs.** An agent that only needs to look
   up prior art doesn't need — and shouldn't be granted — the full planning
-  and administration surface (`users_*`, `orgs_*`, `depts_*`, `projects_*`,
-  and so on).
+  and administration toolset (managing users, organizations, departments,
+  and projects).
 
 In practice, you rarely need to choose one or the other in isolation:
 
@@ -38,9 +36,9 @@ In practice, you rarely need to choose one or the other in isolation:
   separate connection at all — the Framework MCP server's own
   [`knowledge_ask` tool](/mcp-server-tools) proxies into the
   Knowledge Base MCP server for you, forwarding your identity so results are
-  already filtered to what you're authorized to see. This is the tool
-  `planning_get_item_context` also uses internally to surface `priorArt` for
-  checklist items with a Knowledge Base mapping.
+  already filtered to what you're authorized to see. The same underlying
+  connection is also what surfaces related prior art when the assistant
+  looks up context for a checklist item.
 - If you want an agent to **search or retrieve Knowledge Base content
   directly** — outside of a planning session, or from a tool/client that
   doesn't otherwise talk to the Framework MCP server — connect to the
@@ -49,23 +47,17 @@ In practice, you rarely need to choose one or the other in isolation:
 
 ## Authentication
 
-Like the Framework MCP server, every request to the Knowledge Base MCP
-server's `/mcp` endpoint requires a valid bearer token
-(`Authorization: Bearer <token>`), verified
-against the same tenant used by the Framework MCP server and the
-frontend — it's the same end users, authenticating against a different
-service.
+Like the Framework MCP server, every request requires a valid sign-in — the
+same account and organization you use elsewhere in Engineering Framework,
+just authenticating against a different service.
 
 ## Authorization
 
-Every result is checked against the same permission model before it's
-returned — the same `canViewPublishedDocument` and `canEditDocument` checks
-[apps/frontend's search and review pages](/knowledge-base-search) use, via a
-read-only lookup that resolves the caller's authenticated identity to their
-Framework user ID (the identity permission checks are keyed on). An MCP caller only ever
-sees Documents their Framework user is authorized to view — unauthorized
-results are filtered out of `ask`'s response entirely, and `get_by_id`
-throws a clean denial rather than returning partial or redacted content.
+Every result is checked against the same permission model used by the
+[dashboard's search and review pages](/knowledge-base-search). An MCP caller
+only ever sees Documents that person is actually authorized to view —
+unauthorized results are simply left out of the response, never returned in
+a partial or redacted form.
 
 ## Tools
 

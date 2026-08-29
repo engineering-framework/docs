@@ -59,12 +59,10 @@ Each result returned by `ask` includes: `documentId`, `title`, `summary`,
 returned to the caller.
 
 **Authorization is enforced per result**, not just at the tool-call level:
-`ask` runs the same view check (`canViewPublishedDocument` — domain
-reviewer, or project viewer/contributor) against every raw result the
-Knowledge Base returns, and filters out anything the authenticated caller
-isn't allowed to see *before* it's ever included in the response. Ranking
-order from the underlying search is preserved; only unauthorized results are
-dropped.
+`ask` checks every result against the caller's actual permissions and
+filters out anything they're not allowed to see *before* it's ever included
+in the response. Ranking order from the underlying search is preserved;
+only unauthorized results are dropped.
 
 ## Retrieving a Document in full: `get_by_id`
 
@@ -76,14 +74,12 @@ returns, since the Knowledge Base's response is the full contract.
 |---|---|---|
 | `documentId` | Yes | The Knowledge Base Document ID to retrieve. |
 
-Authorization here is status-dependent:
+Authorization here depends on the Document's status:
 
-- **`published`** Documents use the same check as `ask` —
-  `canViewPublishedDocument`.
-- **`draft`** or **`deprecated`** Documents require `canEditDocument`
-  (domain reviewer or Knowledge Base admin) — viewing an unpublished
-  Document's content is treated as a reviewer/editorial action, not a
-  general read.
+- **Published** Documents use the same visibility check as `ask`.
+- **Draft** or **deprecated** Documents require reviewer or admin access —
+  viewing an unpublished Document's content is treated as a reviewer action,
+  not a general read.
 
 On denial, missing document, or an unreachable Knowledge Base, `get_by_id`
 throws before constructing any response — it never returns a partial or
