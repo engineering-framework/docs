@@ -25,9 +25,18 @@
               "getting-started",
               "framework-mcp-server",
               "claude-code-setup",
-              "knowledge-base",
               "permissions",
               "github-sync"
+            ]
+          },
+          {
+            "group": "Knowledge Base",
+            "pages": [
+              "knowledge-base",
+              "knowledge-base-overview",
+              "knowledge-base-search",
+              "knowledge-base-review",
+              "knowledge-base-queue-health"
             ]
           }
         ]
