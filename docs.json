@@ -23,11 +23,19 @@
             "group": "Documentation (in progress)",
             "pages": [
               "getting-started",
-              "framework-mcp-server",
               "claude-code-setup",
               "knowledge-base",
               "permissions",
               "github-sync"
+            ]
+          },
+          {
+            "group": "Framework MCP Server",
+            "pages": [
+              "framework-mcp-server",
+              "mcp-server-overview",
+              "mcp-server-tools",
+              "mcp-server-prompts"
             ]
           }
         ]

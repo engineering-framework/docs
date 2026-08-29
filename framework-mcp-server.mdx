@@ -1,12 +1,24 @@
 ---
 title: "Framework MCP Server"
-description: "Manage organizations, users, and departments through MCP tools"
+description: "Connect AI agents to the Framework MCP server to manage projects, planning, and organizations through MCP"
 ---
 
-<Note>
-  Coming soon. This section will document the Framework MCP server's tools,
-  authentication requirements, and how to connect an MCP client to it.
-</Note>
+The Framework MCP server exposes Engineering Framework's planning and
+administration operations as a [Model Context Protocol](https://modelcontextprotocol.io)
+server, so AI agents can use them directly.
+
+<Columns cols={3}>
+  <Card title="Overview" icon="circle-info" href="/mcp-server-overview">
+    What the server is, why connect an agent to it, and how it fits into the
+    product.
+  </Card>
+  <Card title="Tools Reference" icon="wrench" href="/mcp-server-tools">
+    Every tool, its parameters, and what it returns.
+  </Card>
+  <Card title="Prompts Reference" icon="messages-square" href="/mcp-server-prompts">
+    The five guided workflows and the phrasing that triggers each one.
+  </Card>
+</Columns>
 
 See [Claude Code Setup](/claude-code-setup) for step-by-step instructions on
 connecting Claude Code to the Framework MCP server.

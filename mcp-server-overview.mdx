@@ -1,0 +1,91 @@
+---
+title: "Framework MCP Server: Overview"
+description: "What the Framework MCP server is, why you'd connect an AI agent to it, and how it fits into the Engineering Framework product"
+---
+
+## What it is
+
+The Framework MCP server (`apps/mcpserver`) exposes Engineering Framework's
+planning and administration operations as a
+[Model Context Protocol](https://modelcontextprotocol.io) server. It runs as
+its own deployable service (on fly.io) and lets any MCP-compatible AI client —
+Claude Code, Claude Desktop, or another agent — read and write the same data
+your team manages through the web app, using the same authentication and
+authorization rules.
+
+Under the hood it is a thin transport layer: every tool handler validates its
+input, builds an `AuthContext` from the caller's Auth0 identity, and delegates
+the actual work to `@repo/core/operations` — the same business logic the
+Next.js frontend uses. There is no separate code path or relaxed permission
+model for agent access.
+
+## Why connect an agent to it
+
+Engineering Framework organizes project planning around a checklist-style
+framework: categories of concerns (technical design, reliability, security,
+and so on) broken into individual checklist items, each of which can have a
+definition, an artifact template, and a completion status per project.
+Working through that framework by hand — figuring out what's missing, writing
+the artifact, updating the record — is exactly the kind of multi-step,
+context-heavy task an AI agent is good at.
+
+Connecting an agent to the MCP server lets you, from your terminal or chat
+client:
+
+- Create a project and scope which framework items apply to it
+- Ask "what's missing for my current phase?" and get a prioritized list of
+  gaps
+- Generate a planning artifact (an ADR, rollback plan, SLO doc, etc.) from the
+  project's context and the item's template
+- Review an existing artifact against its definition and template for gaps
+- Manage users, departments, and roles without leaving your agent session
+
+The server pairs [tools](/mcp-server-tools) (individual operations) with
+[prompts](/mcp-server-prompts) (multi-step guided workflows that chain several
+tool calls together with instructions for the agent to follow).
+
+## How it fits into the product
+
+```
+┌─────────────────┐        ┌──────────────────┐        ┌─────────────────┐
+│   AI agent       │  MCP   │  Framework MCP    │  calls │   @repo/core      │
+│ (Claude Code,    │◄──────►│  server            │◄──────►│   operations       │
+│  Claude Desktop)  │  HTTP  │  (apps/mcpserver)  │        │   (Prisma + FGA)   │
+└─────────────────┘        └──────────────────┘        └─────────────────┘
+                                     ▲
+                                     │ same AuthContext,
+                                     │ same permission checks
+                                     ▼
+                            ┌──────────────────┐
+                            │  Next.js frontend  │
+                            │  (apps/frontend)   │
+                            └──────────────────┘
+```
+
+- **Authentication**: the agent's MCP client presents a valid Auth0 JWT on
+  every request (`Authorization: Bearer <token>`). The server validates it via
+  `express-jwt` / `jwks-rsa`.
+- **Authorization**: each tool call is checked against OpenFGA before it runs.
+  Tools marked `fgaControlled` are hidden from `tools/list` entirely if the
+  caller can't view them, and rejected at execution time if the caller can't
+  execute them — an agent never sees or successfully calls a tool outside the
+  user's actual permissions.
+- **Data**: all reads and writes go through the same Prisma-backed
+  `@repo/core/operations` layer as the web app, so state stays consistent
+  regardless of which surface — dashboard or agent — made the change.
+
+## Getting connected
+
+See [Claude Code Setup](/claude-code-setup) for the specific steps to add the
+Framework MCP server to Claude Code, including the CLI command, JSON config,
+and a `CLAUDE.md` snippet your organization settings page can generate for
+you pre-filled with your organization (and optionally project) IDs. Other MCP
+clients (Claude Desktop, etc.) connect the same way, over the `/mcp`
+StreamableHTTP endpoint, using their own MCP server configuration UI.
+
+Once connected, see:
+
+- [Tools Reference](/mcp-server-tools) for every individual tool, its
+  parameters, and what it returns
+- [Prompts Reference](/mcp-server-prompts) for the five guided workflows and
+  the natural-language phrasing that triggers each one
