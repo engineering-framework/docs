@@ -1,0 +1,84 @@
+---
+title: "GitHub Sync"
+description: "Sync your framework.yml manifest and content from a GitHub repository"
+---
+
+GitHub Sync lets you manage your organization's framework content — categories,
+subcategories, items, and templates — as version-controlled files in a GitHub
+repository, instead of editing them directly in the dashboard. Configure a
+repository once, and every push can automatically sync the latest content.
+
+## Start from our template
+
+The fastest way to get started is to fork our template repository, which
+already has the expected structure and a working example:
+
+<Card
+  title="engineering-framework/framework-template"
+  icon="github"
+  href="https://github.com/engineering-framework/framework-template"
+>
+  Fork it, customize the content, and point GitHub Sync at your fork.
+</Card>
+
+## Expected repository structure
+
+Your repository must contain a `framework.yml` manifest at its root, along
+with `definitions/` and `templates/` directories:
+
+```text
+your-framework-repo/
+├── framework.yml              # Required: defines the full hierarchy
+├── definitions/
+│   ├── {item-slug}.md         # One file per item with hasDefinition: true
+│   └── ...
+└── templates/
+    ├── {template-slug}.md     # One file per template listed in framework.yml
+    └── ...
+```
+
+## The framework.yml schema
+
+`framework.yml` defines the full hierarchy of categories, subcategories,
+items, and templates that will be synced into your organization's framework.
+
+```yaml
+# framework.yml — place in your repository root
+categories:
+  - name: "Initiative Foundation"
+    slug: "initiative-foundation"
+    order: 1
+    description: "Lay the groundwork for a new initiative."
+    subcategories:
+      - name: "Problem Statement"
+        slug: "problem-statement"
+        order: 1
+        items:
+          - name: "Problem space researched and documented"
+            slug: "problem-space-researched"
+            order: 1
+            optional: false
+            hasDefinition: true       # load from definitions/problem-space-researched.md
+            hasTemplate: true
+            templateSlug: "problem-statement"  # must exist in templates[] below
+
+templates:
+  - slug: "problem-statement"
+    name: "Problem Statement Template"
+    file: "templates/problem-statement.md"
+```
+
+## Setting up the webhook
+
+To automatically sync whenever you push to your configured branch, add a
+webhook to your GitHub repository:
+
+1. In your GitHub repo, go to **Settings → Webhooks → Add webhook**.
+2. Set the payload URL to the Webhook URL shown on your organization's
+   GitHub Sync settings page.
+3. Set the content type to `application/json`.
+4. Subscribe to **Push** events only.
+5. Paste in the webhook secret shown on the settings page.
+
+Once saved, every push to your configured branch will trigger a sync
+automatically.

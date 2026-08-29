@@ -25,7 +25,8 @@
               "getting-started",
               "framework-mcp-server",
               "knowledge-base",
-              "permissions"
+              "permissions",
+              "github-sync"
             ]
           }
         ]
