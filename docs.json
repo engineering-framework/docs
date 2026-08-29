@@ -27,6 +27,8 @@
               "claude-code-setup",
               "knowledge-base",
               "permissions",
+              "permissions-explained",
+              "roles-management",
               "github-sync"
             ]
           }

@@ -1,0 +1,118 @@
+---
+title: "Permissions & Roles Explained"
+description: "What org admins, members, and reviewers can each do"
+---
+
+<Warning>
+  This article describes permission behavior as observed in the codebase's
+  usage sites (the permission checks that guard each operation). The
+  canonical authorization model definition was found in-repo at
+  `scripts/fga-model.mjs` and cross-checked against those call sites, but the
+  live OpenFGA store is the actual source of truth at runtime — if your
+  organization's behavior doesn't match what's described here, verify against
+  the OpenFGA dashboard/store before assuming this doc is stale.
+</Warning>
+
+Engineering Framework controls what each person in your organization can see
+and do using **roles**. Every person is either an **org admin** or a
+**member**, and on top of that, individual people can be made **reviewers**
+for specific Knowledge Base subject areas. This page explains what each of
+those actually means in practice.
+
+## Org Admin vs. Member
+
+Every user in your organization has one of two standing levels:
+
+<CardGroup cols={2}>
+  <Card title="Org Admin" icon="shield">
+    Full management access across the organization: users, departments,
+    projects, planning, and role assignments.
+  </Card>
+  <Card title="Member" icon="user">
+    Can view and work within the organization's projects and framework
+    checklists, but can't manage users, departments, or roles.
+  </Card>
+</CardGroup>
+
+### What Org Admins can do
+
+- Everything a Member can do, plus:
+- Create, update, and delete **projects**
+- Manage **project members** (add/remove people from a project)
+- Create, update, and delete **departments**
+- Create **planning items** and update their status
+- Update organization settings
+- Create, edit, and delete **role templates**, and assign or revoke roles for
+  any user in the organization
+- View organization-wide **Knowledge Base review-queue health** (draft
+  backlog across all subject areas — see [Reviewers](#reviewers) below)
+
+### What Members can do
+
+- View projects, departments, and planning status within the organization
+- Use the Engineering Framework checklist tools (list categories, list
+  items, view definitions and templates)
+- View their own permissions and role assignments
+
+Membership is per-organization, not per-project: any Member can view any
+project in their organization by default — access isn't scoped down to
+"only projects I'm on."
+
+<Note>
+  Org Admin is a superset of Member. If you're an Admin, you automatically
+  have everything a Member has — you don't need to be granted both.
+</Note>
+
+## Reviewers
+
+Reviewers are a separate, more targeted kind of access, specific to the
+**Knowledge Base**. A reviewer is assigned to one or more **domains**
+(subject-matter areas in the Knowledge Base's taxonomy — e.g. "Auth",
+"Billing", "Infrastructure"), not to the organization as a whole.
+
+Being a reviewer on a domain lets you:
+
+- See **draft** documents in that domain before they're published (drafts
+  are otherwise hidden from everyone except reviewers of that domain and
+  org admins)
+- Take editorial actions on documents in that domain — approve/promote a
+  draft to published, override its confidence score, manage flags, and
+  deprecate published documents
+
+Reviewer status is scoped strictly to the domains you're assigned — being a
+reviewer for "Auth" gives you no special access to "Billing" documents.
+
+Org Admins automatically have reviewer-equivalent access everywhere: any
+admin can view drafts and take editorial actions in **any** domain, without
+needing to be individually assigned as a reviewer. This is why there's no
+separate "Knowledge Base admin" role — org admin status covers it.
+
+<Note>
+  As of this writing, there isn't yet a page in the dashboard for assigning
+  or revoking reviewer status — the underlying capability exists, but it
+  isn't wired up to the UI or an MCP tool yet. If you need someone made a
+  reviewer for a domain, this currently requires direct configuration; check
+  with your org admin or the engineering team.
+</Note>
+
+## Everything else: role templates
+
+Beyond the built-in Admin/Member/Reviewer split, your organization can also
+define custom **role templates** — reusable bundles of permissions (which
+features, MCP tools, and organization-level abilities a role grants) that
+you can hand out to users. See [Roles Management](/roles-management) for how
+to create and assign these.
+
+## Quick reference: who can do what
+
+| Action | Member | Org Admin |
+|---|---|---|
+| View projects & planning status | Yes | Yes |
+| Use framework checklist tools | Yes | Yes |
+| Create/edit/delete projects | No | Yes |
+| Manage project members | No | Yes |
+| Create/edit/delete departments | No | Yes |
+| Create & update planning items | No | Yes |
+| Manage role templates & assignments | No | Yes |
+| View Knowledge Base draft documents | Only in domains they review | Yes, everywhere |
+| Take editorial actions on Knowledge Base documents | Only in domains they review | Yes, everywhere |
