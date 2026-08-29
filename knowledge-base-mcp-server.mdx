@@ -10,7 +10,7 @@ retrieval over the Knowledge Base as a
 [Model Context Protocol](https://modelcontextprotocol.io) server. It is a
 separate, independently deployed and versioned service from the
 [Framework MCP server](/mcp-server-overview) (`apps/mcpserver`) — same
-transport (StreamableHTTP at `/mcp`), same Auth0 tenant and end users, but a
+transport (StreamableHTTP at `/mcp`), same authentication tenant and end users, but a
 different codebase, a different database, and a narrower purpose.
 
 ## Why two MCP servers
@@ -22,8 +22,7 @@ guides, pitfalls, process docs). They're split into separate services
 deliberately:
 
 - **Independent deployment and database.** The Knowledge Base has its own
-  Postgres database (`KB_DATABASE_URL`, with pgvector for embeddings) and is
-  versioned and deployed independently of the Framework. Splitting the MCP
+  database and is versioned and deployed independently of the Framework. Splitting the MCP
   surface the same way keeps that boundary intact end to end, rather than
   giving the Framework server direct database access into a service it
   doesn't own.
@@ -51,19 +50,19 @@ In practice, you rarely need to choose one or the other in isolation:
 ## Authentication
 
 Like the Framework MCP server, every request to the Knowledge Base MCP
-server's `/mcp` endpoint requires a valid Auth0 bearer token
-(`Authorization: Bearer <token>`), verified via `express-jwt`/`jwks-rsa`
-against the same Auth0 tenant used by the Framework MCP server and the
+server's `/mcp` endpoint requires a valid bearer token
+(`Authorization: Bearer <token>`), verified
+against the same tenant used by the Framework MCP server and the
 frontend — it's the same end users, authenticating against a different
 service.
 
 ## Authorization
 
-Every result is checked against OpenFGA before it's returned — the same
-`canViewPublishedDocument` and `canEditDocument` checks
+Every result is checked against the same permission model before it's
+returned — the same `canViewPublishedDocument` and `canEditDocument` checks
 [apps/frontend's search and review pages](/knowledge-base-search) use, via a
-read-only lookup that resolves the caller's Auth0 identity to their Framework
-user ID (the identity OpenFGA tuples are keyed on). An MCP caller only ever
+read-only lookup that resolves the caller's authenticated identity to their
+Framework user ID (the identity permission checks are keyed on). An MCP caller only ever
 sees Documents their Framework user is authorized to view — unauthorized
 results are filtered out of `ask`'s response entirely, and `get_by_id`
 throws a clean denial rather than returning partial or redacted content.
@@ -85,5 +84,5 @@ documents `ask` and `get_by_id` in full — this page won't repeat that detail.
 
 See [Knowledge Base MCP Server Setup](/knowledge-base-mcp-setup) for the
 Claude Code connection steps. Other MCP clients connect the same way, over
-the `/mcp` StreamableHTTP endpoint with an Auth0 bearer token, using their
+the `/mcp` StreamableHTTP endpoint with a bearer token, using their
 own MCP server configuration UI.

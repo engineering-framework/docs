@@ -12,8 +12,8 @@ against source as of this writing, not inferred from naming conventions.
 <Note>
   Most tools are `fgaControlled`: they're hidden from `tools/list` if the
   caller can't view them, and rejected at execution time if the caller can't
-  execute them. Only `context_get` and `knowledge_ask` are not FGA-controlled
-  (see their entries below for why).
+  execute them. Only `context_get` and `knowledge_ask` are not
+  permission-controlled (see their entries below for why).
 </Note>
 
 ## Context
@@ -21,7 +21,7 @@ against source as of this writing, not inferred from naming conventions.
 ### `context_get`
 
 Returns the authenticated user's own context — their internal user ID,
-organization ID, department ID, name, and email. Not FGA-controlled, so it's
+organization ID, department ID, name, and email. Not permission-controlled, so it's
 always available; agents should call this first to discover the IDs needed
 for every other tool call.
 
@@ -345,9 +345,9 @@ Knowledge Base mapping.
 Search the Knowledge Base for prior art relevant to the current planning
 task (existing designs, decisions, documented patterns). Proxies to
 `apps/kbmcpserver`'s own `ask` tool over a real MCP client connection,
-forwarding the caller's Auth0 token so results are already filtered to what
-that user is authorized to see. Not FGA-controlled locally — authorization is
-enforced downstream by `apps/kbmcpserver`. Degrades gracefully: if the
+forwarding the caller's authentication token so results are already filtered
+to what that user is authorized to see. Authorization isn't enforced at this
+layer — it's enforced downstream by `apps/kbmcpserver`. Degrades gracefully: if the
 Knowledge Base service is unreachable, returns `available: false` with an
 empty result set instead of failing the call — treat that as "lookup wasn't
 possible," not "no prior art exists."

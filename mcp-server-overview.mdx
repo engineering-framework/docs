@@ -14,10 +14,10 @@ your team manages through the web app, using the same authentication and
 authorization rules.
 
 Under the hood it is a thin transport layer: every tool handler validates its
-input, builds an `AuthContext` from the caller's Auth0 identity, and delegates
-the actual work to `@repo/core/operations` — the same business logic the
-Next.js frontend uses. There is no separate code path or relaxed permission
-model for agent access.
+input, builds an `AuthContext` from the caller's authenticated identity, and
+delegates the actual work to `@repo/core/operations` — the same business
+logic the web frontend uses. There is no separate code path or relaxed
+permission model for agent access.
 
 ## Why connect an agent to it
 
@@ -50,27 +50,27 @@ tool calls together with instructions for the agent to follow).
 ┌─────────────────┐        ┌──────────────────┐        ┌─────────────────┐
 │   AI agent       │  MCP   │  Framework MCP    │  calls │   @repo/core      │
 │ (Claude Code,    │◄──────►│  server            │◄──────►│   operations       │
-│  Claude Desktop)  │  HTTP  │  (apps/mcpserver)  │        │   (Prisma + FGA)   │
+│  Claude Desktop)  │  HTTP  │  (apps/mcpserver)  │        │  (data + perms)   │
 └─────────────────┘        └──────────────────┘        └─────────────────┘
                                      ▲
                                      │ same AuthContext,
                                      │ same permission checks
                                      ▼
                             ┌──────────────────┐
-                            │  Next.js frontend  │
+                            │   Web frontend    │
                             │  (apps/frontend)   │
                             └──────────────────┘
 ```
 
-- **Authentication**: the agent's MCP client presents a valid Auth0 JWT on
-  every request (`Authorization: Bearer <token>`). The server validates it via
-  `express-jwt` / `jwks-rsa`.
-- **Authorization**: each tool call is checked against OpenFGA before it runs.
-  Tools marked `fgaControlled` are hidden from `tools/list` entirely if the
-  caller can't view them, and rejected at execution time if the caller can't
-  execute them — an agent never sees or successfully calls a tool outside the
-  user's actual permissions.
-- **Data**: all reads and writes go through the same Prisma-backed
+- **Authentication**: the agent's MCP client presents a valid bearer token on
+  every request (`Authorization: Bearer <token>`), verified using standard
+  JWT validation.
+- **Authorization**: each tool call is checked against the same permission
+  model before it runs. Tools marked `fgaControlled` are hidden from
+  `tools/list` entirely if the caller can't view them, and rejected at
+  execution time if the caller can't execute them — an agent never sees or
+  successfully calls a tool outside the user's actual permissions.
+- **Data**: all reads and writes go through the same
   `@repo/core/operations` layer as the web app, so state stays consistent
   regardless of which surface — dashboard or agent — made the change.
 

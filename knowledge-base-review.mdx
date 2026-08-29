@@ -44,10 +44,10 @@ override when present, otherwise the baseline.
 
 ## The review queue
 
-The **Review Queue** page (`/dashboard/knowledge/review`) lists draft
+The **Review Queue** page lists draft
 Documents in the domains you're a reviewer for. This list is
-domain-scoped server-side: it resolves which domains you can review via FGA
-first, then asks the Knowledge Base for drafts in exactly that domain set.
+domain-scoped server-side: it resolves which domains you can review via the
+permission model first, then asks the Knowledge Base for drafts in exactly that domain set.
 
 One consequence worth knowing: a Knowledge Base admin who has *not* been
 separately granted `reviewer` on any domain sees an **empty** queue here —

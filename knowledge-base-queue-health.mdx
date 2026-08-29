@@ -3,7 +3,7 @@ title: "Queue Health Monitoring"
 description: "Org-wide visibility into the draft-review backlog"
 ---
 
-**Queue Health Monitoring** (`/dashboard/knowledge/queue-health`) gives
+**Queue Health Monitoring** gives
 Knowledge Base admins an org-wide view of the draft-review backlog — across
 every domain, not just the domains an individual reviewer is scoped to.
 
@@ -24,7 +24,7 @@ the [Review Queue](/knowledge-base-review) page.
 ## Who can see it
 
 Access requires being a Knowledge Base admin for your organization
-(`isKnowledgeBaseAdmin`, which resolves to the `organization#admin` FGA
+(`isKnowledgeBaseAdmin`, which resolves to the `organization#admin`
 relation — there is no separate `domain#admin` relation). A caller without
 an organization, or without the admin grant, is denied with a
 `ForbiddenError` rather than being shown an empty dashboard.

@@ -6,11 +6,11 @@ description: "What org admins, members, and reviewers can each do"
 <Warning>
   This article describes permission behavior as observed in the codebase's
   usage sites (the permission checks that guard each operation). The
-  canonical authorization model definition was found in-repo at
-  `scripts/fga-model.mjs` and cross-checked against those call sites, but the
-  live OpenFGA store is the actual source of truth at runtime — if your
-  organization's behavior doesn't match what's described here, verify against
-  the OpenFGA dashboard/store before assuming this doc is stale.
+  canonical authorization model definition was cross-checked against those
+  call sites, but the live permission configuration is the actual source of
+  truth at runtime — if your organization's behavior doesn't match what's
+  described here, verify against your current permission settings before
+  assuming this doc is stale.
 </Warning>
 
 Engineering Framework controls what each person in your organization can see
