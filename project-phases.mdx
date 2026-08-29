@@ -1,0 +1,77 @@
+---
+title: "Project Phases & Phase Mapping"
+description: "What phases are and how phase-category mapping drives gap analysis"
+---
+
+Every project moves through a **lifecycle phase** (Discovery, Design,
+Delivery, etc.), and each phase can be mapped to the checklist categories
+that matter most while a project is in it. This mapping is what lets gap
+analysis surface the most relevant missing checklist items for a project's
+current phase, instead of showing every gap across the whole framework at
+once.
+
+## Project Phases
+
+Configured at **Settings → Project Phases**
+(`/dashboard/settings/phases`). A phase has:
+
+- **Name** and **Slug** (auto-generated from the name, editable)
+- **Description** (optional)
+- **Order** — determines display order everywhere phases are listed (in the
+  phase list, and when creating/editing a project); lower numbers appear
+  first
+
+Every project has exactly one phase (`Project.phaseId`, required).
+
+### System vs. org-specific phases
+
+Phases can be **system-defined** (`ProjectPhase.isSystem: true`,
+`organizationId: null`) or **organization-specific**
+(`isSystem: false`, scoped to one org). By default, an organization uses the
+system-provided phases. Creating your first custom phase (via **Add
+Phase**) replaces the system defaults for that organization — from then on,
+the org manages its own phase list. System phases can't be edited or
+deleted from the UI; org-specific phases can be edited or deleted, except
+that a phase currently in use by an active project can't be deleted until
+projects using it are reassigned to a different phase.
+
+## Phase → Category Mapping
+
+Configured at **Settings → Phase Mapping**
+(`/dashboard/settings/phase-categories`). This page lets you select a phase
+on the left, then check which checklist categories should be prioritized
+while a project is in that phase. Mappings are saved per phase via the
+`setPhaseCategoryMappings` action and stored as `PhaseChecklistCategoryMap`
+rows, each associating one `phaseId` with one checklist category
+(`categoryId`) for one organization.
+
+Mappings can reference either:
+
+- **System checklist categories** (`ChecklistCategory`,
+  `isOrgCategory: false`), or
+- **Org-specific checklist categories** (`OrgChecklistCategory`,
+  `isOrgCategory: true`) — see [The Framework Checklist](/framework-checklist)
+  for how org-specific categories get created (typically via
+  [GitHub Sync](/github-sync))
+
+A phase with **no** mappings falls back to showing all checklist gaps,
+unfiltered, as if phase mapping weren't in use — mapping is additive
+prioritization, not a restriction. Phases must be configured before phase
+mappings can be set up; the mapping page links back to **Settings → Project
+Phases** if no phases exist yet.
+
+## Why this matters for gap analysis
+
+Because `PhaseChecklistCategoryMap` ties a phase to specific checklist
+categories, gap analysis for a project can prioritize items from the
+categories mapped to that project's *current* phase — for example,
+surfacing "Technical Design" gaps for a project in a Design phase before
+surfacing gaps from categories more relevant to later phases like
+"Rollout & Operations."
+
+## Related reading
+
+- [The Framework Checklist](/framework-checklist) for how categories,
+  subcategories, and items are structured
+- [Core Concepts](/core-concepts) for how projects relate to organizations
+  and departments
