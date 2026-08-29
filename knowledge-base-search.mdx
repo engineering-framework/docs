@@ -1,0 +1,98 @@
+---
+title: "Searching & Asking the Knowledge Base"
+description: "Semantic search for people in the dashboard, and the ask MCP tool for AI agents"
+---
+
+The Knowledge Base exposes the same underlying semantic search through two
+surfaces: a search page in the dashboard for people, and an `ask` MCP tool
+for AI agents. Both enforce the same authorization rules, so an AI agent
+never sees a result a human user of the same account couldn't also see.
+
+## Searching from the dashboard
+
+The **Knowledge Base** page (`/dashboard/knowledge`) is a simple search form:
+enter a natural-language query, optionally narrow to a specific project, and
+submit. Search is cross-project by default — it looks across every domain
+and project you have access to unless you supply a project filter.
+
+Each result shows:
+
+- **Title** and a short **summary**
+- **Relevance** — the semantic match score for your query, as a percentage
+- **Confidence** — the Document's confidence score (its reviewer override if
+  one has been set, otherwise the computed baseline), or "Unknown" if
+  neither is available
+- **Health flags** — any flags the Document currently carries (see
+  [The Document Review Workflow](/knowledge-base-review) for what each flag
+  means)
+
+You can filter the results list down to Documents carrying specific health
+flags using the flag filter above the results. This filtering happens
+client-side against the results already returned — there's no separate
+flags parameter sent to the search API — so it only narrows what you already
+fetched, it doesn't fetch more.
+
+Results are limited to Documents you're authorized to view: search only
+returns Documents you have visibility into, and only `published` Documents
+are returned at all — this page never surfaces drafts.
+
+## The `ask` MCP tool
+
+For AI agents connected via the Framework MCP server, the `ask` tool wraps
+the same semantic search:
+
+| Parameter | Required | Description |
+|---|---|---|
+| `query` | Yes | Natural-language search query. |
+| `project` | No | Optional project ID filter. Cross-project search is the default when omitted. |
+| `limit` | No | Maximum results to return, 1–50 (default 10). |
+
+Each result returned by `ask` includes: `documentId`, `title`, `summary`,
+`score`, `confidence`, and `flags`. Internal-only fields like `domains` and
+`projectId` are intentionally stripped from the response before it's
+returned to the caller.
+
+**Authorization is enforced per result**, not just at the tool-call level:
+`ask` runs the same view check (`canViewPublishedDocument` — domain
+reviewer, or project viewer/contributor) against every raw result the
+Knowledge Base returns, and filters out anything the authenticated caller
+isn't allowed to see *before* it's ever included in the response. Ranking
+order from the underlying search is preserved; only unauthorized results are
+dropped.
+
+## Retrieving a Document in full: `get_by_id`
+
+Where `ask` returns ranked summaries, `get_by_id` retrieves one Document's
+full content by its ID — the same shape the Knowledge Base's own API
+returns, since the Knowledge Base's response is the full contract.
+
+| Parameter | Required | Description |
+|---|---|---|
+| `documentId` | Yes | The Knowledge Base Document ID to retrieve. |
+
+Authorization here is status-dependent:
+
+- **`published`** Documents use the same check as `ask` —
+  `canViewPublishedDocument`.
+- **`draft`** or **`deprecated`** Documents require `canEditDocument`
+  (domain reviewer or Knowledge Base admin) — viewing an unpublished
+  Document's content is treated as a reviewer/editorial action, not a
+  general read.
+
+On denial, missing document, or an unreachable Knowledge Base, `get_by_id`
+throws before constructing any response — it never returns a partial or
+redacted Document, only a clean denial.
+
+## KB MCP tools reference
+
+Two additional tools round out the Knowledge Base MCP server:
+
+- **`kb_health_check`** — returns the authenticated caller's identity,
+  server status, and Knowledge Base database connectivity. It's a scaffold/
+  diagnostic tool proving the MCP connection and auth are working end to
+  end; it is not a real Knowledge Base capability and has been superseded by
+  `ask` and `get_by_id`.
+- **`get_by_id`** — described above.
+
+For details on how Documents move from `draft` to `published` in the first
+place, see [The Document Review Workflow](/knowledge-base-review).

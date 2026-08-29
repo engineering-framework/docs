@@ -49,8 +49,17 @@
             "group": "Documentation (in progress)",
             "pages": [
               "claude-code-setup",
-              "knowledge-base",
               "github-sync"
+            ]
+          },
+          {
+            "group": "Knowledge Base",
+            "pages": [
+              "knowledge-base",
+              "knowledge-base-overview",
+              "knowledge-base-search",
+              "knowledge-base-review",
+              "knowledge-base-queue-health"
             ]
           }
         ]
