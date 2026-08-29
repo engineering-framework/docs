@@ -1,0 +1,73 @@
+---
+title: "What is Engineering Framework"
+description: "An overview of what Engineering Framework does and who it's for"
+---
+
+<Note>
+  Draft — needs product/marketing review for positioning and messaging. This
+  page was drafted from the codebase (README, package descriptions, and
+  feature set) rather than from product or marketing input, and should not be
+  treated as final copy.
+</Note>
+
+## Elevator pitch
+
+Engineering Framework is a full-stack planning and governance tool for
+software organizations. It gives engineering teams a structured checklist —
+the **Engineering Planning Framework** — for what "good" looks like at each
+phase of a project (discovery, design, delivery, and beyond), and tracks
+which of those items each project has actually completed.
+
+On top of that checklist, it layers multi-tenant **organization and
+department management**, fine-grained **permissions** (who can see or edit
+what), a **Knowledge Base** that ingests completed planning artifacts so
+they're searchable later, and an **MCP server** that exposes all of the same
+operations as tools for AI agents — so an agent can be asked to check a
+project's planning gaps or fetch a definition/template on a team's behalf,
+not just a human clicking through a dashboard.
+
+## Who it's for
+
+- **Engineering managers and tech leads** who want a consistent, repeatable
+  definition of what planning work should happen before/during a project,
+  instead of every team inventing its own checklist.
+- **Organizations with multiple teams or departments** that need shared
+  standards but also room for department- or org-specific customization
+  (custom phases, custom checklist categories synced from GitHub).
+- **Teams already using AI coding agents**, since the MCP server lets those
+  agents query the framework, check planning gaps, and pull artifact
+  templates directly instead of a human copying content into a chat.
+
+## Core capabilities
+
+- **Organizations, Departments, Projects** — a three-level hierarchy for
+  structuring who belongs to what and which projects belong to which team.
+  See [Core Concepts](/core-concepts) for how this works and how permissions
+  cascade through it.
+- **The Framework Checklist** — categories, subcategories, and items with
+  optional definitions and artifact templates. See
+  [The Framework Checklist](/framework-checklist).
+- **Project Phases & Phase Mapping** — lifecycle phases (e.g. Discovery,
+  Design, Delivery) that projects move through, each mapped to the checklist
+  categories that matter most during that phase. See
+  [Project Phases & Phase Mapping](/project-phases).
+- **GitHub Sync** — organizations can manage their own checklist content as
+  version-controlled files in a GitHub repo instead of editing it by hand in
+  the dashboard. See [GitHub Sync](/github-sync).
+- **Knowledge Base** — ingests completed planning artifacts so they can be
+  searched and referenced later. See [Knowledge Base](/knowledge-base).
+- **Framework MCP Server** — exposes framework, project, and permission
+  operations as Model Context Protocol tools so AI agents can participate in
+  the same workflows as a person using the dashboard. See
+  [Framework MCP Server](/framework-mcp-server).
+- **Auth0 + OpenFGA** — authentication and relationship-based authorization
+  used consistently across the web app and the MCP server. See
+  [Permissions](/permissions).
+
+## What it is not
+
+This page is a draft summary, not confirmed marketing copy — in particular,
+positioning language ("planning and governance tool", target company size,
+pricing/plan framing) has not been reviewed by product or marketing and
+should be treated as a starting point for discussion, not a public-facing
+description.

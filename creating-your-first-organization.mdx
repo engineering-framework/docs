@@ -1,0 +1,70 @@
+---
+title: "Creating your first Organization (Setup Wizard)"
+description: "Walk through the onboarding flow at /dashboard/setup"
+---
+
+When a user logs in for the first time and doesn't yet belong to an
+organization, they're taken through a short setup wizard
+(`OrgSetupWizard`) at `/dashboard/setup` to create one.
+
+## Step 1: Welcome
+
+The wizard opens with a welcome card explaining what creating an
+organization unlocks:
+
+- Invite teammates and manage their roles
+- Create departments to structure your team
+- Control fine-grained permissions with OpenFGA
+
+Click **Get started** to continue.
+
+## Step 2: Name your organization
+
+You're asked for two fields:
+
+- **Organization name** — a display name (e.g. "Acme Corp") shown to all
+  members. It can be changed later.
+- **URL slug** — used in identifiers and URLs (e.g. `acme-corp`). The slug
+  is auto-generated from the name as you type, but can be edited manually;
+  once you touch it directly, it stops auto-following the name field.
+
+The slug must be at least 2 characters and match
+`^[a-z0-9]+(?:-[a-z0-9]+)*$` — lowercase letters, numbers, and single
+hyphens between segments. The form shows a live preview of the resulting
+identifier and disables the submit button until both fields are valid.
+
+Click **Create organization** to submit, or **Back** to return to the
+welcome step.
+
+## What happens on submit
+
+Submitting calls the `setupOrganization` server action
+(`apps/frontend/lib/actions/setup-actions.ts`), which:
+
+1. Builds an `AuthContext` from the current session — this also verifies
+   the user is authenticated.
+2. Calls `initializeOrganization` from `@repo/core/operations` to create the
+   organization and promote the current user to `ORG_ADMIN`.
+3. Best-effort updates the user's Auth0 `app_metadata` with the new
+   `organizationId`, so future JWTs can carry it. This step is **non-fatal**
+   — if Auth0 Management API credentials aren't configured, or the call
+   fails, the error is logged but setup still succeeds, since the database
+   (not Auth0 metadata) is the source of truth.
+4. Revalidates the `/dashboard` cache so the next page load reflects the new
+   organization.
+
+If any step in `initializeOrganization` throws a known `AppError`, its
+message is surfaced directly in the form's error alert; unexpected errors
+show a generic "An unexpected error occurred" message instead.
+
+## Step 3: Done
+
+On success, the wizard shows a confirmation card ("Organization created!")
+naming the new organization, then automatically redirects to `/dashboard`
+after about 1.2 seconds. A **Go to dashboard** button lets you skip the
+wait.
+
+## Related reading
+
+For how the organization you just created relates to departments, projects,
+and permission inheritance, see [Core Concepts](/core-concepts).
