@@ -1,0 +1,359 @@
+---
+title: "Tools Reference"
+description: "Every tool exposed by the Framework MCP server, with parameters and behavior"
+---
+
+This page documents every tool registered by the Framework MCP server
+(`apps/mcpserver/src/tools/`), grouped the way they're registered in
+`src/server/app.ts`. Parameter names, requiredness, and behavior below are
+taken directly from each tool's Zod input schema and handler — verified
+against source as of this writing, not inferred from naming conventions.
+
+<Note>
+  Most tools are `fgaControlled`: they're hidden from `tools/list` if the
+  caller can't view them, and rejected at execution time if the caller can't
+  execute them. Only `context_get` and `knowledge_ask` are not FGA-controlled
+  (see their entries below for why).
+</Note>
+
+## Context
+
+### `context_get`
+
+Returns the authenticated user's own context — their internal user ID,
+organization ID, department ID, name, and email. Not FGA-controlled, so it's
+always available; agents should call this first to discover the IDs needed
+for every other tool call.
+
+**Parameters**: none.
+
+## Users
+
+### `users_list`
+
+List users with optional filters.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `organizationId` | No | Filter by organization ID |
+| `departmentId` | No | Filter by department ID |
+| `limit` | No | Max results, 1–100 (default 50) |
+| `offset` | No | Number to skip (default 0) |
+
+### `users_get`
+
+Get a specific user by ID.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `userId` | Yes | User ID to retrieve |
+
+### `users_update`
+
+Update a user's name and/or email.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `userId` | Yes | User ID to update |
+| `name` | No | New name |
+| `email` | No | New email |
+
+### `users_delete`
+
+Delete a user.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `userId` | Yes | User ID to delete |
+
+## Organizations
+
+### `orgs_update`
+
+Update an organization's name and/or slug. At least one of `name` or `slug`
+must be provided.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `organizationId` | Yes | Organization ID to update |
+| `name` | No | New name (1–100 chars) |
+| `slug` | No | New slug (1–50 chars, lowercase alphanumeric + hyphens) |
+
+## Departments
+
+### `depts_list`
+
+List departments with optional filters.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `organizationId` | No | Filter by organization ID |
+| `limit` | No | Max results, 1–100 (default 50) |
+| `offset` | No | Number to skip (default 0) |
+
+### `depts_create`
+
+Create a new department.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `name` | Yes | Department name (1–100 chars) |
+| `slug` | Yes | URL-friendly slug (lowercase alphanumeric + hyphens) |
+| `organizationId` | Yes | Organization this department belongs to |
+
+### `depts_update`
+
+Update a department's name and/or slug.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `departmentId` | Yes | Department ID to update |
+| `name` | No | New name |
+| `slug` | No | New slug |
+
+### `depts_delete`
+
+Delete a department.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `departmentId` | Yes | Department ID to delete |
+
+## Roles
+
+### `roles_list`
+
+List role templates available in an organization.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `organizationId` | No | Defaults to the caller's own organization |
+
+### `roles_assign`
+
+Assign a role template to a user.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `userId` | Yes | User to assign the role to |
+| `roleTemplateId` | Yes | Role template to assign |
+
+### `roles_revoke`
+
+Revoke a role template from a user.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `userId` | Yes | User to revoke the role from |
+| `roleTemplateId` | Yes | Role template to revoke |
+
+## Projects
+
+### `projects_list`
+
+List projects in an organization. Requires `can_list_projects` (org admin).
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `organizationId` | Yes | Organization to list projects for |
+| `phaseId` | No | Filter by phase ID |
+| `departmentId` | No | Filter by department ID |
+
+### `projects_get`
+
+Get full details for a project: phase, department, all members with roles,
+and integration config if present.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `projectId` | Yes | Project ID to retrieve |
+
+### `projects_create`
+
+Create a new project. The slug is auto-generated from `name`; on a slug
+conflict a random suffix is appended automatically (up to 3 attempts).
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `organizationId` | Yes | Organization to create the project in |
+| `name` | Yes | Project name |
+| `phaseId` | Yes | Phase ID (get from `projects_phases_list`) |
+| `description` | No | Project description |
+| `artifactUrl` | No | Artifact URL associated with the project |
+| `departmentId` | No | Department to associate the project with |
+
+### `projects_update`
+
+Update a project. At least one of `name`, `description`, `artifactUrl`,
+`phaseId`, or `departmentId` must be provided. Passing `null` for
+`description`, `artifactUrl`, or `departmentId` clears that field.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `projectId` | Yes | Project ID to update |
+| `name` | No | New name |
+| `description` | No | New description (or `null` to clear) |
+| `artifactUrl` | No | New artifact URL (or `null` to clear) |
+| `phaseId` | No | New phase ID |
+| `departmentId` | No | New department ID (or `null` to clear) |
+
+### `projects_members_list`
+
+List all members of a project with their user details and roles.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `projectId` | Yes | Project ID to list members for |
+
+### `projects_phases_list`
+
+List available project phases for an organization. Returns org-specific
+phases if they exist, otherwise falls back to system phases. Requires
+`can_list_projects` on the organization.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `organizationId` | Yes | Organization to list phases for |
+
+## Framework (checklist)
+
+### `framework_list_categories`
+
+List all Engineering Planning Framework categories with their subcategories.
+Use this first to understand the framework's high-level structure.
+
+**Parameters**: none.
+
+### `framework_list_items`
+
+List checklist items, optionally filtered by category or subcategory. Each
+item reports whether a definition (`hasDefinition`) and artifact template
+(`hasTemplate`) are available.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `categorySlug` | No | Filter by category slug |
+| `subcategorySlug` | No | Filter by subcategory slug |
+
+### `framework_get_item`
+
+Get full details for a single checklist item by slug, including category and
+subcategory context and resource URIs (`checklist://definitions/<slug>`,
+`checklist://templates/<slug>`) for its definition/template.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `slug` | Yes | Item slug (from `framework_list_items`) |
+
+### `framework_get_definition`
+
+Get the full definition text for a checklist item inline (as opposed to via
+the MCP resource protocol). Returns a message if no definition exists.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `itemSlug` | Yes | Checklist item slug |
+
+### `framework_get_template`
+
+Get the full artifact template markdown for a checklist item inline. Returns
+a message if no template exists.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `itemSlug` | Yes | Checklist item slug |
+
+## Planning
+
+### `planning_get_status`
+
+Get a project's planning completion status: counts of scoped checklist items
+by status (`complete`, `in_progress`, `not_started`, `not_applicable`) and a
+completion percentage. Only counts items explicitly added to the project's
+scope — a new project with nothing scoped returns `totalItems: 0`.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `projectId` | Yes | Project ID |
+
+### `planning_get_gaps`
+
+Get incomplete scoped checklist items for a project (excludes `complete` and
+`not_applicable`). Optionally restrict to a category, or to categories mapped
+to a given phase via Settings → Phase Mapping — when `phaseId` is passed, the
+response includes `hasPhaseMapping` indicating whether any mapping exists for
+that phase.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `projectId` | Yes | Project ID |
+| `categorySlug` | No | Filter by category slug |
+| `phaseId` | No | Restrict to categories mapped to this phase |
+
+### `planning_list_items`
+
+List every checklist item in a project's scope regardless of status. Returns
+an empty array if nothing has been scoped yet.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `projectId` | Yes | Project ID |
+
+### `planning_create_item`
+
+Add a checklist item to a project's scope with `not_started` status. Errors
+if the item is already in scope or the slug is unknown.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `projectId` | Yes | Project ID |
+| `checklistItemSlug` | Yes | Checklist item slug (from `framework_list_items`) |
+
+### `planning_update_item`
+
+Upsert the status of a scoped checklist item — creates the record if it
+doesn't exist, updates it if it does.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `projectId` | Yes | Project ID |
+| `checklistItemSlug` | Yes | Checklist item slug |
+| `status` | Yes | One of `not_started`, `in_progress`, `complete`, `not_applicable` |
+| `artifactUrl` | No | URL to the artifact document (or `null` to clear) |
+| `notes` | No | Free-text notes (or `null` to clear) |
+
+### `planning_get_item_context`
+
+Get everything an agent needs to generate an artifact for one checklist
+item in one call: full project details, item metadata, current status,
+artifact URL, and definition/template content if available. For checklist
+items mapped in the Knowledge Base PRD (ADRs, alternative approaches,
+runbooks, design rationale, problem-space research), also returns
+`priorArt` — relevant existing Knowledge Base documents to review before
+re-deriving the item from scratch. `priorArt` is `null` for items with no
+Knowledge Base mapping.
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `projectId` | Yes | Project ID |
+| `checklistItemSlug` | Yes | Checklist item slug |
+
+## Knowledge Base
+
+### `knowledge_ask`
+
+Search the Knowledge Base for prior art relevant to the current planning
+task (existing designs, decisions, documented patterns). Proxies to
+`apps/kbmcpserver`'s own `ask` tool over a real MCP client connection,
+forwarding the caller's Auth0 token so results are already filtered to what
+that user is authorized to see. Not FGA-controlled locally — authorization is
+enforced downstream by `apps/kbmcpserver`. Degrades gracefully: if the
+Knowledge Base service is unreachable, returns `available: false` with an
+empty result set instead of failing the call — treat that as "lookup wasn't
+possible," not "no prior art exists."
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `query` | Yes | Natural-language search query |
+| `project` | No | Project ID filter (omit for cross-project search) |
+| `limit` | No | Max results, 1–50 (default 10) |
