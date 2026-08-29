@@ -38,8 +38,14 @@ are returned at all — this page never surfaces drafts.
 
 ## The `ask` MCP tool
 
-For AI agents connected via the Framework MCP server, the `ask` tool wraps
-the same semantic search:
+`ask` is a native tool of the
+[Knowledge Base MCP server](/knowledge-base-mcp-server) — a separate service
+from the Framework MCP server. (If you're already connected to the
+[Framework MCP server](/claude-code-setup) for planning, its own
+`knowledge_ask` tool proxies into `ask` for you — see
+[mcp-server-tools](/mcp-server-tools) — so you don't need a second
+connection just to search.) For AI agents connected directly to the
+Knowledge Base MCP server, the `ask` tool wraps the same semantic search:
 
 | Parameter | Required | Description |
 |---|---|---|
@@ -95,4 +101,7 @@ Two additional tools round out the Knowledge Base MCP server:
 - **`get_by_id`** — described above.
 
 For details on how Documents move from `draft` to `published` in the first
-place, see [The Document Review Workflow](/knowledge-base-review).
+place, see [The Document Review Workflow](/knowledge-base-review). To connect
+Claude Code directly to the Knowledge Base MCP server (rather than via the
+Framework MCP server's `knowledge_ask` proxy), see
+[Knowledge Base MCP Server Setup](/knowledge-base-mcp-setup).

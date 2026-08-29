@@ -89,3 +89,12 @@ Once connected, see:
   parameters, and what it returns
 - [Prompts Reference](/mcp-server-prompts) for the five guided workflows and
   the natural-language phrasing that triggers each one
+
+<Note>
+  There's a second, separate MCP server for the Knowledge Base
+  (`apps/kbmcpserver`) — search and retrieval over Knowledge Base Documents,
+  not planning or administration. The Framework MCP server's own
+  `knowledge_ask` tool already proxies into it, so you often don't need a
+  separate connection. See [Knowledge Base MCP Server: Overview](/knowledge-base-mcp-server)
+  for when you'd connect to it directly instead.
+</Note>
