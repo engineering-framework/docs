@@ -1,0 +1,98 @@
+---
+title: "The Framework Checklist"
+description: "Categories, subcategories, items, definitions, and templates"
+---
+
+The **Engineering Planning Framework** checklist is the core content model
+of the product: a structured set of categories, subcategories, and items
+that describe what "good" planning looks like for a software project.
+Projects track their own completion status against this checklist via
+`ProjectChecklistItem`.
+
+## Structure
+
+The checklist is organized in three levels:
+
+- **Category** (`ChecklistCategory`) — a top-level grouping (e.g.
+  "Technical Design"), with a `name`, unique `slug`, `order`, and optional
+  `description`.
+- **Subcategory** (`ChecklistSubcategory`) — belongs to one category
+  (e.g. "System Architecture" under "Technical Design"), with its own
+  `order`; slugs are unique per category.
+- **Item** (`ChecklistItem`) — the actual checklist entry (e.g.
+  "High-level system design completed"), belonging to one category and one
+  subcategory, with a globally unique `slug` and an `order` within its
+  subcategory.
+
+Items can be marked `optional`. Availability of extra content is tracked
+independently from the content itself: `hasDefinition` /
+`definitionContent` and `hasTemplate` / `templateSlug` are separate flags,
+so an item can be flagged as having a definition or template before the
+actual markdown is authored or linked.
+
+## Definitions and Templates
+
+- A **definition** is markdown text explaining what an item means and what
+  "done" looks like — stored directly on the item
+  (`ChecklistItem.definitionContent`).
+- A **template** is a separate reusable artifact
+  (`ChecklistTemplate`, keyed by its own `slug`) that an item can point to
+  via `templateSlug`, letting multiple items share the same template.
+
+## Org-specific checklist content
+
+Organizations aren't limited to the system-defined checklist. They can
+define their own categories, subcategories, items, and templates
+(`OrgChecklistCategory`, `OrgChecklistSubcategory`, `OrgChecklistItem`,
+`OrgChecklistTemplate`), all scoped by `organizationId`. In practice this
+content is usually managed via [GitHub Sync](/github-sync) rather than
+edited by hand. Category/subcategory references are constrained to stay
+within the same organization.
+
+Per-project checklist state (`ProjectChecklistItem`) can reference either a
+system item (`checklistItemId`) or an org-specific item
+(`orgChecklistItemId`) — never both — with a status of `not_started`,
+`in_progress`, `complete`, or `not_applicable`, plus an optional
+`artifactUrl` and `notes`.
+
+## Browsing the checklist in the dashboard
+
+The **Framework** page (`/dashboard/framework`) renders the full checklist
+as a searchable accordion, grouped by category then subcategory. Each item
+shows badges for whether it's `Optional`, has a template, and/or has a
+definition. Clicking an item opens a detail panel that fetches its
+definition and template content on demand (via the
+`getChecklistDefinition` / `getChecklistTemplate` server actions) and
+renders it as markdown, with a tabbed Definition/Template view when both
+are available.
+
+## Accessing the checklist via MCP
+
+The MCP server exposes the same checklist data as tools, so AI agents can
+browse and read it directly:
+
+- `framework_list_categories` — lists all categories with their
+  subcategories.
+- `framework_list_items` — lists checklist items, optionally filtered by
+  `categorySlug` and/or `subcategorySlug`. Each item reports `hasDefinition`
+  / `hasTemplate` flags and resource URIs
+  (`checklist://definitions/<slug>`, `checklist://templates/<slug>`).
+- `framework_get_item` — full detail for a single item by slug, including
+  its category/subcategory context and resource URIs.
+- `framework_get_definition` / `framework_get_template` — fetch the actual
+  definition or template content inline for a given item slug (as an
+  alternative to reading the MCP resource URIs directly), returning a
+  message instead of content when none is available.
+
+All of these tools are FGA-controlled (`fgaControlled: true`) and build an
+`AuthContext` from the calling user before returning any data — see
+[Permissions](/permissions).
+
+## Related reading
+
+- [Project Phases & Phase Mapping](/project-phases) for how checklist
+  categories get prioritized per phase
+- [GitHub Sync](/github-sync) for managing org-specific checklist content
+  as version-controlled files
+- [Framework MCP Server](/framework-mcp-server) for connecting an AI agent
+  to these tools

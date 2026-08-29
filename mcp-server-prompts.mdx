@@ -1,0 +1,152 @@
+---
+title: "Prompts Reference"
+description: "The five guided workflows the Framework MCP server exposes as MCP prompts, and how to trigger them"
+---
+
+Prompts are multi-step, guided workflows — unlike a single tool call, invoking
+a prompt hands the agent a full script of steps to follow, chaining several
+tool calls together with decision logic in between. All five are defined in
+`apps/mcpserver/src/prompts/index.ts`.
+
+<Note>
+  The exact natural-language phrases below aren't magic strings — they're
+  guidance for how to recognize intent. The mapping your organization's
+  `CLAUDE.md` snippet documents (see [Claude Code
+  Setup](/claude-code-setup)) covers `start_planning_session`,
+  `generate_artifact`, and `review_artifact`. This page is the complete
+  reference for all five, including the two entry points
+  (`create_project`, `scope_planning_items`) not yet in that snippet.
+</Note>
+
+## `create_project`
+
+**Arguments**: none — discovers your organization automatically via
+`context_get`.
+
+**Trigger phrases**: "create a new project", "start a new engineering
+initiative", "set up a project for X"
+
+Creates a new project and immediately hands off into scoping it. Steps:
+
+1. Calls `context_get` to resolve the organization ID. If the caller has no
+   organization, stops and tells them to contact an admin.
+2. Calls `projects_phases_list` to get available phases.
+3. Asks the user for a project name, a 1–3 sentence description, and which
+   phase it's currently in.
+4. Calls `projects_create` with those answers.
+5. Confirms creation, then automatically invokes `scope_planning_items` for
+   the new project.
+
+## `scope_planning_items`
+
+**Arguments**: `projectId` (required).
+
+**Trigger phrases**: "what framework items apply to this project", "help me
+scope this project", "expand scope", "add more checklist items"
+
+Runs a discovery conversation to select which framework checklist items are
+relevant to a project — not every item is meant to apply to every project.
+Steps:
+
+1. Calls `projects_get` and `planning_list_items` to see current scope.
+2. Asks 3–4 discovery questions: primary technology/architecture, team size
+   and new-vs-existing system, reliability/security/compliance requirements,
+   deadlines or external dependencies.
+3. Calls `framework_list_categories` and reasons about relevance per category
+   given the answers, skipping items already in scope.
+4. Presents recommendations grouped by category, each marked `[RECOMMENDED]`
+   or `[OPTIONAL]` with a one-sentence rationale, and lists any categories
+   intentionally skipped.
+5. Lets the user add, remove, or approve items, then calls
+   `planning_create_item` for each approved item (silently skips ones already
+   in scope rather than surfacing a conflict error).
+6. Offers to hand off into `start_planning_session` or `generate_artifact`
+   for one of the newly-scoped items.
+
+## `start_planning_session`
+
+**Arguments**: `projectId` (required).
+
+**Trigger phrases**: "start planning", "review planning health", "what's
+missing on this project"
+
+Analyzes a project's current planning health and surfaces prioritized gaps.
+Steps:
+
+1. Calls `projects_get` and `planning_get_status`.
+2. If the project has zero scoped items (`totalItems === 0`), stops and hands
+   off to `scope_planning_items` instead — there's nothing to report gaps on
+   yet.
+3. Otherwise presents a summary (phase, completion %, status breakdown,
+   integration config status), then calls `planning_get_gaps` with the
+   project's current `phaseId`.
+4. If the org has Phase Mapping configured (`hasPhaseMapping: true`) and
+   there are phase-scoped gaps, presents those first. If phase-scoped gaps
+   are empty, falls back to all gaps. If no phase mapping exists, presents
+   all gaps and prioritizes by phase relevance manually.
+5. Presents the top 5 gaps (prioritizing items with a template available),
+   then asks the user to pick one — which hands off into `generate_artifact`
+   — see the full list, or say "expand scope" to hand off into
+   `scope_planning_items`.
+
+Does not generate any artifacts unless the user explicitly picks an item.
+
+## `generate_artifact`
+
+**Arguments**: `projectId` (required), `checklistItemSlug` (required — use
+`framework_list_items` to find the slug if you only have the item's name).
+
+**Trigger phrases**: "generate / write / create / help me with [artifact
+name]" — e.g. "write the rollback plan for this project"
+
+Produces a planning artifact as a markdown document, using the item's
+template and the project's context. Steps:
+
+1. Calls `planning_get_item_context` to get everything needed in one call.
+2. If the item is already `complete` with an artifact URL, confirms with the
+   user before regenerating.
+3. Summarizes what it's about to generate (item, purpose, template sections).
+4. Generates the artifact: follows the template structure exactly if one
+   exists; fills sections from real project context (name, description,
+   phase, team, integration config); inserts `[TODO: ...]` placeholders for
+   anything it doesn't know rather than fabricating details like SLA numbers
+   or capacity estimates; if no template exists, infers structure from the
+   definition and says so at the top.
+5. Presents the draft and asks for approval, revising in a loop until the
+   user is satisfied.
+6. Once approved, gives the user the suggested file path
+   (`[docsPath]/[checklistItemSlug].md`) and the exact markdown to commit,
+   and asks them to commit it and share the resulting URL.
+7. When the user provides the URL, calls `planning_update_item` with
+   `status: "complete"` and that `artifactUrl`.
+
+Never marks an item complete without an artifact URL the user actually
+provided, and never generates content outside this workflow.
+
+## `review_artifact`
+
+**Arguments**: `projectId` (required), `checklistItemSlug` (required).
+
+**Trigger phrases**: "review / check / evaluate [artifact]" — e.g. "review our
+rollback plan"
+
+Reviews an existing (or in-progress) artifact against its checklist item's
+definition and template, and produces structured feedback. Steps:
+
+1. Calls `planning_get_item_context` for the item's definition, template,
+   status, and artifact URL.
+2. If there's no artifact yet (`not_started`, no URL), offers to switch to
+   `generate_artifact` instead and stops.
+3. If an artifact URL exists, asks the user to paste its current content
+   (the server doesn't fetch external URLs itself). If the item is
+   `in_progress` with no URL, asks for the draft content directly.
+4. Reviews the content against the definition, template structure, and
+   whether it's specific to the project or generic boilerplate.
+5. Produces a structured review: **Overall Assessment**, **What's Working**,
+   **Gaps** (each tied to a specific missing definition/template
+   requirement), **Recommendations** (specific, not vague — e.g. names the
+   exact section and what it's missing), and a **Suggested Status**
+   (`complete`, `in_progress`, or `not_started`).
+6. Offers to either help revise the artifact (looping back into the
+   `generate_artifact` finalize-and-record steps) or just update the
+   planning record status via `planning_update_item`.
