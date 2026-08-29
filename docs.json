@@ -20,13 +20,28 @@
             ]
           },
           {
-            "group": "Documentation (in progress)",
+            "group": "Getting Started",
             "pages": [
               "getting-started",
+              "what-is-engineering-framework",
+              "creating-your-first-organization"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts",
+              "project-phases",
+              "framework-checklist",
+              "permissions"
+            ]
+          },
+          {
+            "group": "Documentation (in progress)",
+            "pages": [
               "framework-mcp-server",
               "claude-code-setup",
               "knowledge-base",
-              "permissions",
               "github-sync"
             ]
           }
