@@ -11,7 +11,7 @@ workflow tools directly in your terminal.
 Run this command in your terminal:
 
 ```bash
-claude mcp add engineering-framework --transport http <your-mcp-server-url>/mcp
+claude mcp add engineering-framework --transport http https://mcp.engineeringframework.dev/mcp
 ```
 
 Or add this to your `.claude/settings.json` manually:
@@ -21,7 +21,7 @@ Or add this to your `.claude/settings.json` manually:
   "mcpServers": {
     "engineering-framework": {
       "type": "http",
-      "url": "<your-mcp-server-url>/mcp",
+      "url": "https://mcp.engineeringframework.dev/mcp",
       "note": "Engineering Framework Planning Tools"
     }
   }
