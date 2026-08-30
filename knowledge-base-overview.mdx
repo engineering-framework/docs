@@ -37,10 +37,8 @@ before it becomes visible to general search — see
 
 ## How content gets added
 
-Content is written as Markdown and added to the Knowledge Base either
-through a command-line tool (for anyone comfortable with a terminal) or
-programmatically as part of another workflow. Either way, every new Document
-goes through the same steps automatically:
+There are three ways content enters the Knowledge Base today. Whichever way
+it comes in, every new Document goes through the same steps automatically:
 
 1. It's checked against your organization's projects and domains, so it's
    filed correctly.
@@ -51,6 +49,37 @@ goes through the same steps automatically:
    [The Document Review Workflow](/knowledge-base-review)) and given a
    starting confidence score, so reviewers know what needs the most
    attention.
+
+### Automatically, from completing a checklist item
+
+This is the path most people will actually use, and it requires nothing
+extra from you. A handful of framework checklist items — the ones that
+produce a real artifact, like architecture decision records, operational
+runbooks, and documented design trade-offs — automatically create a draft
+Knowledge Base Document when you mark them complete, using the item's name,
+your notes, and any artifact link you provided.
+
+This happens best-effort, in the background: marking a checklist item
+complete never fails or waits on the Knowledge Base, and there's currently
+no confirmation in the dashboard that a Document was actually created.
+If you're relying on this and want to confirm it worked, check the review
+queue or ask your admin, rather than assuming it always succeeds.
+
+<Note>
+  A CLI for directly and reliably ingesting content — for anyone who wants
+  more control than the automatic trigger gives them, including AI
+  assistants — is planned but not yet available. This page will be updated
+  once it ships.
+</Note>
+
+### By hand, for engineering and operations use
+
+Content can also be added directly by someone with engineering access to
+the Knowledge Base's underlying systems, or through a service-level
+connection used internally by Engineering Framework itself (for example,
+the automatic checklist trigger above uses this path under the hood). Both
+of these are internal/engineering capabilities today, not something a
+general user sets up or uses directly.
 
 ## Where content goes next
 
