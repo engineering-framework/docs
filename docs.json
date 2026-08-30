@@ -75,7 +75,8 @@
             "pages": [
               "knowledge-base-mcp-server",
               "knowledge-base-mcp-setup",
-              "engframe-cli"
+              "engframe-cli",
+              "engframe-skill"
             ]
           }
         ]
