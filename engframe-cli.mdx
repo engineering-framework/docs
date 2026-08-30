@@ -1,0 +1,118 @@
+---
+title: "engframe CLI: Install & Use"
+description: "Install the engframe command-line tool to add content to the Knowledge Base from your terminal"
+---
+
+`engframe` is a small command-line tool for adding content to the Knowledge
+Base without opening the dashboard. Log in once with your browser, then
+ingest a Markdown file straight from your terminal or a script.
+
+<Note>
+  This is a separate, general-purpose tool from the [Knowledge Base MCP
+  Server](/knowledge-base-mcp-server) — that's for connecting an AI
+  assistant like Claude Code to search and read the Knowledge Base.
+  `engframe` is something you (or a script) run directly, and today it only
+  does one thing: ingest. More commands will be added over time.
+</Note>
+
+## Install
+
+```bash
+npm install -g @engineeringframework/cli
+```
+
+This installs an `engframe` command on your `PATH`. Requires
+[Node.js](https://nodejs.org) 20 or later. If you'd rather not install
+globally, `npx @engineeringframework/cli <command>` works the same way
+without installing anything permanently.
+
+## Log in
+
+```bash
+engframe login
+```
+
+This opens your default browser to sign in. After you log in, `engframe`
+stores a token on your machine so you don't need to log in again until it
+expires — if it does, the next command will tell you to run `engframe login`
+again.
+
+By default, `engframe` connects to the hosted Knowledge Base. If your
+organization runs its own deployment, pass its URL explicitly, or set it
+once as an environment variable:
+
+```bash
+engframe login --server https://kbmcp.your-org.example.com
+# or
+export KB_MCP_SERVER_URL=https://kbmcp.your-org.example.com
+engframe login
+```
+
+## Ingest a document
+
+```bash
+engframe ingest path/to/document.md
+```
+
+On success, this prints the new Document's ID and status. New Documents
+always start as **draft** — never automatically published — so it'll need
+review before it shows up in search. See
+[The Document Review Workflow](/knowledge-base-review).
+
+```
+Ingested Document 8f2c1e40-... (status: draft)
+```
+
+If something's wrong with the file — an unknown project, an unknown domain,
+or a link to a Document you're not authorized to see — `engframe` prints
+the specific problem rather than a generic failure.
+
+### Front matter format
+
+The file must start with a `---`-delimited block of front matter, followed
+by the Markdown content:
+
+```markdown
+---
+title: "How we handle retries in the payments webhook"
+type: decision
+tags:
+  - payments
+  - reliability
+domains:
+  - payments
+projectId: proj_abc123
+---
+
+## Context
+
+Explain the decision here in normal Markdown...
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `title` | Yes | Document title. |
+| `type` | Yes | e.g. `concept`, `decision`, `guide`, `pitfall`, `process`. |
+| `tags` | No | Free-form, filterable tags. |
+| `domains` | No | Subject areas this Document belongs to. |
+| `projectId` | No | Scopes the Document to a specific project you belong to. |
+| `appliesTo` | No | Scope of applicability. |
+| `sources` | No | Source references (URLs, etc). |
+| `edges` | No | `part_of` / `relates_to` lists of other Document IDs to link to. You must be authorized to view every Document you link to. |
+
+The content after the closing `---` becomes the Document's body.
+
+## Other commands
+
+```bash
+engframe whoami   # shows which server you're logged in to, and whether your session is still valid
+engframe logout   # signs you out and deletes the locally stored token
+engframe --help
+```
+
+## Related reading
+
+- [The Knowledge Base: What It's For](/knowledge-base-overview) for how
+  ingested content fits into the bigger picture
+- [The Document Review Workflow](/knowledge-base-review) for what happens
+  after you ingest a draft

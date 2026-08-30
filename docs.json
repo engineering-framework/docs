@@ -74,7 +74,8 @@
             "group": "Knowledge Base MCP Server",
             "pages": [
               "knowledge-base-mcp-server",
-              "knowledge-base-mcp-setup"
+              "knowledge-base-mcp-setup",
+              "engframe-cli"
             ]
           }
         ]
