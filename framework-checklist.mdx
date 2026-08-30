@@ -3,96 +3,80 @@ title: "The Framework Checklist"
 description: "Categories, subcategories, items, definitions, and templates"
 ---
 
-The **Engineering Planning Framework** checklist is the core content model
-of the product: a structured set of categories, subcategories, and items
-that describe what "good" planning looks like for a software project.
-Projects track their own completion status against this checklist via
-`ProjectChecklistItem`.
+The **Engineering Planning Framework** checklist is the core of the product:
+a structured set of categories and items that describe what "good" planning
+looks like for a software project — things like technical design, security
+review, and rollout planning. Every project tracks its own progress against
+this checklist, so at any point you can see what's been done and what's
+still missing.
+
+## Why this matters
+
+Without a shared checklist, planning quality depends entirely on who happens
+to be running the project — some teams write a thorough design doc and
+rollback plan, others skip straight to building. The framework checklist
+gives every project the same baseline expectations, so gaps get caught
+before launch instead of after an incident.
 
 ## Structure
 
-The checklist is organized in three levels:
+The checklist has three levels:
 
-- **Category** (`ChecklistCategory`) — a top-level grouping (e.g.
-  "Technical Design"), with a `name`, unique `slug`, `order`, and optional
-  `description`.
-- **Subcategory** (`ChecklistSubcategory`) — belongs to one category
-  (e.g. "System Architecture" under "Technical Design"), with its own
-  `order`; slugs are unique per category.
-- **Item** (`ChecklistItem`) — the actual checklist entry (e.g.
-  "High-level system design completed"), belonging to one category and one
-  subcategory, with a globally unique `slug` and an `order` within its
-  subcategory.
+- **Category** — a top-level grouping, like "Technical Design" or
+  "Reliability & Operations."
+- **Subcategory** — a more specific grouping within a category, like "System
+  Architecture" under "Technical Design."
+- **Item** — the actual checklist entry, like "High-level system design
+  completed."
 
-Items can be marked `optional`. Availability of extra content is tracked
-independently from the content itself: `hasDefinition` /
-`definitionContent` and `hasTemplate` / `templateSlug` are separate flags,
-so an item can be flagged as having a definition or template before the
-actual markdown is authored or linked.
+Some items are marked **optional** — relevant to some projects but not
+required for every one.
 
-## Definitions and Templates
+## Definitions and templates
 
-- A **definition** is markdown text explaining what an item means and what
-  "done" looks like — stored directly on the item
-  (`ChecklistItem.definitionContent`).
-- A **template** is a separate reusable artifact
-  (`ChecklistTemplate`, keyed by its own `slug`) that an item can point to
-  via `templateSlug`, letting multiple items share the same template.
+Many checklist items come with extra help:
 
-## Org-specific checklist content
+- A **definition** — a short explanation of what the item actually means and
+  what "done" looks like, so it's not just a vague label.
+- A **template** — a ready-to-use artifact (like an ADR template or a
+  rollback plan outline) that a project can start from instead of writing
+  from scratch. The same template can be shared across multiple checklist
+  items.
 
-Organizations aren't limited to the system-defined checklist. They can
-define their own categories, subcategories, items, and templates
-(`OrgChecklistCategory`, `OrgChecklistSubcategory`, `OrgChecklistItem`,
-`OrgChecklistTemplate`), all scoped by `organizationId`. In practice this
-content is usually managed via [GitHub Sync](/github-sync) rather than
-edited by hand. Category/subcategory references are constrained to stay
-within the same organization.
+Not every item has both — some are simple status checks, others come with a
+full definition and template.
 
-Per-project checklist state (`ProjectChecklistItem`) can reference either a
-system item (`checklistItemId`) or an org-specific item
-(`orgChecklistItemId`) — never both — with a status of `not_started`,
-`in_progress`, `complete`, or `not_applicable`, plus an optional
-`artifactUrl` and `notes`.
+## Customizing the checklist for your organization
+
+The built-in checklist is a starting point, not a fixed list. Your
+organization can add its own categories, subcategories, items, and
+templates on top of it. In practice, most organizations manage this custom
+content through [GitHub Sync](/github-sync) rather than editing it by hand,
+so changes go through the same review process as your code.
 
 ## Browsing the checklist in the dashboard
 
-The **Framework** page renders the full checklist
-as a searchable accordion, grouped by category then subcategory. Each item
-shows badges for whether it's `Optional`, has a template, and/or has a
-definition. Clicking an item opens a detail panel that fetches its
-definition and template content on demand (via the
-`getChecklistDefinition` / `getChecklistTemplate` server actions) and
-renders it as markdown, with a tabbed Definition/Template view when both
-are available.
+The **Framework** page shows the full checklist as a searchable,
+expandable list, grouped by category and subcategory. Each item shows
+whether it's optional, and whether it has a template and/or a definition
+available. Clicking an item opens its full definition and template content,
+with tabs to switch between the two when both are available.
 
-## Accessing the checklist via MCP
+## Using the checklist with an AI assistant
 
-The MCP server exposes the same checklist data as tools, so AI agents can
-browse and read it directly:
-
-- `framework_list_categories` — lists all categories with their
-  subcategories.
-- `framework_list_items` — lists checklist items, optionally filtered by
-  `categorySlug` and/or `subcategorySlug`. Each item reports `hasDefinition`
-  / `hasTemplate` flags and resource URIs
-  (`checklist://definitions/<slug>`, `checklist://templates/<slug>`).
-- `framework_get_item` — full detail for a single item by slug, including
-  its category/subcategory context and resource URIs.
-- `framework_get_definition` / `framework_get_template` — fetch the actual
-  definition or template content inline for a given item slug (as an
-  alternative to reading the MCP resource URIs directly), returning a
-  message instead of content when none is available.
-
-All of these tools are permission-controlled (`fgaControlled: true`) and build an
-`AuthContext` from the calling user before returning any data — see
-[Permissions](/permissions).
+If your team connects an AI coding assistant to the
+[Framework MCP server](/framework-mcp-server), the assistant can browse
+categories and items, read definitions and templates, and help draft
+artifacts directly — without anyone copying checklist content into a chat
+window by hand. Every response is filtered to what that person is actually
+allowed to see, the same as the dashboard — see
+[Permissions & Roles Explained](/permissions-explained).
 
 ## Related reading
 
-- [Project Phases & Phase Mapping](/project-phases) for how checklist
-  categories get prioritized per phase
-- [GitHub Sync](/github-sync) for managing org-specific checklist content
-  as version-controlled files
-- [Framework MCP Server](/framework-mcp-server) for connecting an AI agent
-  to these tools
+- [Project Phases](/project-phases) for how checklist categories get
+  prioritized as a project moves through its lifecycle
+- [GitHub Sync](/github-sync) for managing your own checklist content as
+  version-controlled files
+- [Framework MCP Server](/framework-mcp-server) for connecting an AI
+  assistant to the checklist

@@ -1,16 +1,15 @@
 ---
-title: "Creating your first Organization (Setup Wizard)"
-description: "Walk through the onboarding flow for creating your first organization"
+title: "Creating your first Organization"
+description: "Walk through the setup wizard to create your organization"
 ---
 
-When a user logs in for the first time and doesn't yet belong to an
-organization, they're taken through a short setup wizard
-(`OrgSetupWizard`) to create one.
+The first time anyone from your company logs in, you'll be taken through a
+short setup wizard to create your organization — the account that everyone
+on your team will belong to.
 
 ## Step 1: Welcome
 
-The wizard opens with a welcome card explaining what creating an
-organization unlocks:
+The wizard opens with a summary of what creating an organization unlocks:
 
 - Invite teammates and manage their roles
 - Create departments to structure your team
@@ -20,51 +19,34 @@ Click **Get started** to continue.
 
 ## Step 2: Name your organization
 
-You're asked for two fields:
+You're asked for two things:
 
-- **Organization name** — a display name (e.g. "Acme Corp") shown to all
-  members. It can be changed later.
-- **URL slug** — used in identifiers and URLs (e.g. `acme-corp`). The slug
-  is auto-generated from the name as you type, but can be edited manually;
-  once you touch it directly, it stops auto-following the name field.
+- **Organization name** — a display name (e.g. "Acme Corp") shown to
+  everyone on your team. You can change this later.
+- **URL slug** — a short, lowercase identifier used in links and IDs (e.g.
+  `acme-corp`). It fills in automatically from your organization name as you
+  type, but you can edit it yourself if you'd prefer something different.
 
-The slug must be at least 2 characters and match
-`^[a-z0-9]+(?:-[a-z0-9]+)*$` — lowercase letters, numbers, and single
-hyphens between segments. The form shows a live preview of the resulting
-identifier and disables the submit button until both fields are valid.
+The page shows a live preview of what the identifier will look like, and
+won't let you continue until both fields are filled in correctly.
 
 Click **Create organization** to submit, or **Back** to return to the
 welcome step.
 
-## What happens on submit
+## What happens next
 
-Submitting calls the `setupOrganization` server action
-(`apps/frontend/lib/actions/setup-actions.ts`), which:
-
-1. Builds an `AuthContext` from the current session — this also verifies
-   the user is authenticated.
-2. Calls `initializeOrganization` from `@repo/core/operations` to create the
-   organization and promote the current user to `ORG_ADMIN`.
-3. Best-effort updates the user's identity provider profile with the new
-   `organizationId`, so future sessions can carry it. This step is
-   **non-fatal** — if the identity provider integration isn't configured, or
-   the call fails, the error is logged but setup still succeeds, since the
-   database (not the identity provider) is the source of truth.
-4. Revalidates the `/dashboard` cache so the next page load reflects the new
-   organization.
-
-If any step in `initializeOrganization` throws a known `AppError`, its
-message is surfaced directly in the form's error alert; unexpected errors
-show a generic "An unexpected error occurred" message instead.
+Creating your organization automatically makes you its first **Org Admin** —
+the role with full management access, described in
+[Permissions & Roles Explained](/permissions-explained). From here you can
+invite teammates, create departments, and start setting up projects.
 
 ## Step 3: Done
 
-On success, the wizard shows a confirmation card ("Organization created!")
-naming the new organization, then automatically redirects to `/dashboard`
-after about 1.2 seconds. A **Go to dashboard** button lets you skip the
-wait.
+On success, you'll see a confirmation ("Organization created!") and be taken
+to your dashboard automatically after a moment. A **Go to dashboard** button
+lets you skip the wait.
 
 ## Related reading
 
 For how the organization you just created relates to departments, projects,
-and permission inheritance, see [Core Concepts](/core-concepts).
+and permissions, see [Core Concepts](/core-concepts).

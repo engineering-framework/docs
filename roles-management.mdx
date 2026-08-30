@@ -10,9 +10,8 @@ themselves; assigning a template to a specific person happens from the
 [Users](#assigning-and-revoking-roles) page.
 
 <Note>
-  Only users with the `roles-management` permission (granted by default to
-  the built-in **Org Admin** role) can access this page. Everyone else is
-  redirected to the dashboard.
+  Only Org Admins can access this page. Everyone else is redirected to the
+  dashboard.
 </Note>
 
 ## System templates vs. custom templates
@@ -46,7 +45,8 @@ MCP tools).
      (full MCP server admin)
    - **MCP Tools** — grouped by category (User Management, Role Management,
      Organizations, Departments, Engineering Framework, Projects, Planning);
-     each toggle grants `execute` access to that specific tool
+     each toggle grants access to that specific tool for an AI assistant
+     connected via this role
 5. Click **Create Template**. You need at least a name, a slug, and one
    permission toggled on.
 
@@ -95,14 +95,3 @@ match the combination of their assigned templates, or whether they've
 drifted from it (for example, if permissions were changed for them directly
 rather than through a template) — this is surfaced as a "custom" indicator
 in the permissions sheet.
-
-## How this maps to the underlying model
-
-Each permission toggle in the role editor corresponds to a specific,
-concrete access grant — an organization-level role, a feature flag, MCP
-server access, or execute access on one MCP tool. When you assign a role
-template to a user, the framework expands those grants for that user's
-actual organization and applies them; when you revoke or delete a template,
-it computes the net set to remove so a user never loses a permission they
-still hold through a different role. You don't need to think about this
-mechanics to use the page — it's handled automatically on save.
