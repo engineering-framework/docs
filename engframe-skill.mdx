@@ -1,0 +1,162 @@
+---
+title: "Agent Skill: Save to the Knowledge Base"
+description: "A Claude Code Skill that teaches an agent to ingest decisions, guides, and runbooks into the Knowledge Base using engframe"
+---
+
+Claude Code (and other agents that support the
+[Agent Skills](https://docs.claude.com/en/docs/claude-code/skills) format) can
+learn to save content to the Knowledge Base on its own, using the
+[engframe CLI](/engframe-cli). Drop the `SKILL.md` below into your project and
+your agent will recognize when a conversation has produced something worth
+keeping — a decision, a pattern, a runbook, a postmortem — and offer to write
+it up and ingest it, instead of letting it disappear at the end of the
+session.
+
+<Note>
+  This is a skill *for an agent*, not a person. It assumes `engframe` is
+  installed and you've already run `engframe login` at least once — see
+  [engframe CLI: Install & Use](/engframe-cli) if you haven't. The skill
+  itself tells the agent to check for this and prompt you if it's missing,
+  rather than assuming it silently.
+</Note>
+
+## What this skill does
+
+Once installed, an agent with this skill will:
+
+1. Recognize moments worth persisting — the user asking to "save this",
+   "write this up", "add this to the knowledge base", or the agent itself
+   noticing a conclusion, decision, or workaround from the current session
+   that's worth keeping for next time.
+2. Check that `engframe` is installed and the user is logged in before doing
+   anything else.
+3. Write a Markdown file with the correct YAML front matter (title, type,
+   tags, domains, project, etc.) and run `engframe ingest` on it.
+4. Tell you plainly that the result is a **draft** — not yet visible in
+   search — and that it needs a reviewer to approve it, rather than implying
+   the content is immediately live.
+5. Surface the actual error if ingestion fails, instead of retrying silently
+   or inventing a workaround.
+
+## Install it
+
+Create `.claude/skills/knowledge-base-ingest/SKILL.md` in your project (or
+your user-level `~/.claude/skills/` directory to make it available
+everywhere) and paste in the content below.
+
+```markdown
+---
+name: knowledge-base-ingest
+description: Save a decision, pattern, runbook, or postmortem from the current conversation to the Engineering Framework Knowledge Base using the engframe CLI. Use when the user asks to save, document, or write up something for future reference, or when the agent identifies a conclusion from the session worth persisting for other engineers (human or AI) to find later.
+---
+
+# Save to the Knowledge Base
+
+Use this skill to turn a conclusion from the current conversation into a
+Knowledge Base Document via the `engframe` CLI.
+
+## When to use this
+
+- The user explicitly asks to save, document, write up, or record something
+  ("save this as a decision", "add this to the knowledge base", "write a
+  runbook for this").
+- You've just helped resolve something worth keeping for next time — a
+  non-obvious decision with real trade-offs, a pitfall someone is likely to
+  hit again, a runbook for an operational process, or a postmortem — and it
+  isn't already documented elsewhere. If you're not sure, ask the user before
+  ingesting rather than doing it unprompted.
+
+## Prerequisite: confirm engframe is ready
+
+Before writing anything, check that the CLI is installed and the user is
+authenticated:
+
+```bash
+engframe whoami
+```
+
+- If the command isn't found, tell the user to install it with
+  `npm install -g @engineeringframework/cli` and stop.
+- If it reports the session isn't logged in (or has expired), tell the user
+  to run `engframe login` and stop. Don't attempt to work around a missing
+  login.
+
+Don't assume either of these is already satisfied — always check first.
+
+## Write the file
+
+Draft a Markdown file with YAML front matter, then the content as the body.
+Use a temporary path (e.g. `.claude/tmp/kb-<short-slug>.md`) unless the user
+asks for it to be kept.
+
+Required front matter fields:
+
+- `title` — a specific, descriptive title.
+- `type` — one of `concept`, `decision`, `guide`, `pitfall`, `process`. Pick
+  the one that matches what you're recording; ask the user if it's genuinely
+  ambiguous.
+
+Optional but encouraged when known:
+
+- `tags` — free-form keywords for filtering.
+- `domains` — subject areas this belongs to (e.g. `payments`, `auth`).
+- `projectId` — if this is specific to one project the user belongs to.
+- `appliesTo` — scope of applicability, if narrower than the domain/project
+  implies.
+- `sources` — links to PRs, tickets, or docs that back this up.
+- `edges` — `part_of` / `relates_to` links to other Document IDs, only if you
+  already know them and are authorized to view them.
+
+Write the body as normal Markdown. Keep it substantive — a couple of
+sentences won't clear review. Include the reasoning behind a decision, not
+just the outcome.
+
+## Ingest it
+
+```bash
+engframe ingest <path-to-file.md>
+```
+
+On success, `engframe` prints the new Document's ID and status
+(`status: draft`). Tell the user:
+
+- The Document was created as a **draft**.
+- It is **not yet visible in Knowledge Base search** — a reviewer for its
+  domain needs to approve it first.
+- Where to check on it later (the Review Queue in the dashboard), if they
+  ask.
+
+Do not tell the user the content is "saved to the knowledge base" in a way
+that implies it's searchable now — say it's queued for review.
+
+## If ingestion fails
+
+`engframe` prints the specific problem (unknown project, unknown domain, an
+`edges` link to a Document you're not authorized to see, not logged in,
+etc.). Show the user that actual error message. Don't:
+
+- Retry the same command hoping it works.
+- Silently drop the field that caused the failure and re-ingest without
+  telling the user.
+- Guess at a project or domain ID that wasn't provided.
+
+Ask the user how they'd like to resolve it, then try again once you have an
+answer.
+```
+
+## Save the file
+
+Copy the fenced block above (everything from the first `---` to the closing
+` ``` `) into `.claude/skills/knowledge-base-ingest/SKILL.md` in your
+project, and commit it like any other project file so the rest of your team
+gets it too.
+
+## Related reading
+
+- [engframe CLI: Install & Use](/engframe-cli) for install, login, and the
+  full front matter field reference
+- [The Knowledge Base: What It's For](/knowledge-base-overview) for how
+  ingested content fits into the bigger picture
+- [The Document Review Workflow](/knowledge-base-review) for what happens to
+  a Document after it's ingested as a draft
+</content>
